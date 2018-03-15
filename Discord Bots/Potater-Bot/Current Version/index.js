@@ -51,7 +51,7 @@ bot.on("message", function (message) {
 	//Do nothing if message is sent by a bot
 	if (message.author.equals(bot.user)) return;
 
-	//Greet fellow human
+	//Greet fellow humanff 
 	if (message.content == "hello") {
 		message.channel.send("Hi there!");
 	}
@@ -174,9 +174,6 @@ bot.on("message", function (message) {
 		 * Returns a string
 		 */
 			if (args[1]) {//this and the following IF statements can be removed without worry
-				if (args3.toLowerCase() === "raonaq is gay" || args3.toLowerCase() === "raonaq is trash") {
-					return message.channel.send("He sure is");
-				}
 				var fort = fortunes[Math.floor(Math.random() * fortunes.length)];
 				message.channel.send(fort);
 				if (fort === "BECAUSE I'M BATMAN")
