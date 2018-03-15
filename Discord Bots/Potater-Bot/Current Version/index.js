@@ -51,7 +51,7 @@ bot.on("message", function (message) {
 	//Do nothing if message is sent by a bot
 	if (message.author.equals(bot.user)) return;
 
-	//Greet fellow humanff 
+	//Greet fellow human
 	if (message.content == "hello") {
 		message.channel.send("Hi there!");
 	}
@@ -156,8 +156,8 @@ bot.on("message", function (message) {
 		 * Returns the ping of the message author.
 		 * WIP, STAND-IN FUNCTION PUT IN PLACE
 		 */
-			var pingOfUser = message.author.Client.ping;
-			message.channel.send(`Your ping is: ${pingOfUser}ms`);
+			var pingOfUser = message.client.ping;
+			message.channel.send(`Your ping is: **${pingOfUser}ms**`);
 			break;
 		case "info":
 		/**
@@ -368,15 +368,15 @@ bot.on("message", function (message) {
 			var minutes = 1000 * 60;
 			var hours = minutes * 60;
 			var d = new Date();
-			var timeInMinutes = Math.round(t / minutes);
+			var timeInMinutes = Math.round(minutes);
 			let timeNow = timeInMinutes % (2 * hours);
 			let timeDisplay = "";
 			var HoursNow = timeNow / 60;
 			timeDisplay = `${HoursNow}:${timeInMinutes % 60}`;
 			if (timeNow <= 1800000) { //3600000 = 2 hours
-				timeEmbed.addField("Time in Cetus: *Day*", `Time to NIGHT: *${timeDisplay}*`);
+				timeEmbed.addField("Time in Cetus: **Day**", `Time to NIGHT: **${timeDisplay}**`);
 			}else{
-				timeEmbed.addField("Time in Cetus: *Night*", `Time to DAY: *${timeDisplay}*`);
+				timeEmbed.addField("Time in Cetus: **Night**", `Time to DAY: **${timeDisplay}**`);
 			}
 			return message.channel.send(timeEmbed);
 			break;
