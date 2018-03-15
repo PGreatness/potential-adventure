@@ -156,7 +156,8 @@ bot.on("message", function (message) {
 		 * Returns the ping of the message author.
 		 * WIP, STAND-IN FUNCTION PUT IN PLACE
 		 */
-			message.channel.send("Pong!");
+			var pingOfUser = message.author.Client.ping;
+			message.channel.send(`Your ping is: ${pingOfUser}ms`);
 			break;
 		case "info":
 		/**
