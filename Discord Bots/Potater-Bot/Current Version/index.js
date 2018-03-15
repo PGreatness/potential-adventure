@@ -360,6 +360,25 @@ bot.on("message", function (message) {
 			message.channel.send("Done!");
 			message.mentions.users.first().send(banEmbed);
 			break;
+			//WARFRAME Game Commands
+			//~~~~~~~~~~~~~~~~~~~~~~V~~~~~~~~~~~~~~~~~
+		case "etime": //WIP
+			const timeEmbed = new Discord.RichEmbed();
+			var minutes = 1000 * 60;
+			var hours = minutes * 60;
+			var d = new Date();
+			var timeInMinutes = Math.round(t / minutes);
+			let timeNow = timeInMinutes % (2 * hours);
+			let timeDisplay = "";
+			var HoursNow = timeNow / 60;
+			timeDisplay = `${HoursNow}:${timeInMinutes % 60}`;
+			if (timeNow <= 1800000) { //3600000 = 2 hours
+				timeEmbed.addField("Time in Cetus: *Day*", `Time to NIGHT: *${timeDisplay}*`);
+			}else{
+				timeEmbed.addField("Time in Cetus: *Night*", `Time to DAY: *${timeDisplay}*`);
+			}
+			return message.channel.send(timeEmbed);
+			break;
 		default: //default case, used when an unknown command is given with the prefix
 			message.channel.send("I don't know what to do with this ;-;");
 			break;
