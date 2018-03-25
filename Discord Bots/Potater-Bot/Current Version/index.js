@@ -17,6 +17,7 @@ const botSettings = require("./bot-settings.json"); //uses TOKEN in bot-settings
 const userSettings = require("./user-settings.json"); //uses data gathered on users WIP
 const TOKEN = botSettings.TOKEN; //login token, REQUIRED
 const PREFIX = "!"; //command trigger
+const fs = require('fs'); //file creating method
 var bot = new Discord.Client();
 //derp batman image
 var bat = "https://vignette.wikia.nocookie.net/warframe/images/5/5f/Batman_derp_by_uchihirokilove-d59h7in.png/revision/latest?cb=20151020102248";
@@ -365,20 +366,55 @@ bot.on("message", function (message) {
 			//~~~~~~~~~~~~~~~~~~~~~~V~~~~~~~~~~~~~~~~~
 		case "etime": //WIP
 			const timeEmbed = new Discord.RichEmbed();
-			var minutes = 1000 * 60;
-			var hours = minutes * 60;
 			var d = new Date();
-			var timeInMinutes = Math.round(minutes);
-			let timeNow = timeInMinutes % (2 * hours);
-			let timeDisplay = "";
-			var HoursNow = timeNow / 60;
-			timeDisplay = `${HoursNow}:${timeInMinutes % 60}`;
-			if (timeNow <= 1800000) { //3600000 = 2 hours
+			var HoursNow = d.getHours() % 12;
+			var MinutesNow = d.getMinutes() % 60;
+			var minCount = (HoursNow * 60) + (MinutesNow * 60);
+			timeDisplay = `${HoursNow}:${MinutesNow}`;
+			if (minCount % 150 < 100) { //150 mins is one day/night cycle. 100 min is 1 day
 				timeEmbed.addField("Time in Cetus: **Day**", `Time to NIGHT: **${timeDisplay}**`);
 			}else{
 				timeEmbed.addField("Time in Cetus: **Night**", `Time to DAY: **${timeDisplay}**`);
 			}
 			return message.channel.send(timeEmbed);
+			break;
+		case "report": //WIP
+			if (!args[1]) {
+				return message.channel.send("No one mentioned");
+			}
+			if (!args[2]) {
+				return message.channel.send("Please submit a reason");
+			}
+			var fileName = `./${message.mentions.users.first().username}.json`;
+			fs.exists(fileName, function(exists) {
+				if (exists) {
+					console.log("File against user exists, writing to file...");
+					var file = require(fileName);
+					file.report = file.report + `, ${args[2]}`;
+					file.reportCount = file.reportCount + 1;
+					fs.writeFile(fileName, JSON.stringify(file, null, 2), function(err) {
+						if (err) {
+							console.log(err);
+							return message.channel.send("Error encountered, please try again");
+						}
+						console.log(JSON.stringify(file, null, 2));
+						console.log(`Writing to ${fileName}`);
+					});
+				}else{
+					json = {
+						report : args[2],
+						reportCount : 1
+					}
+					json = JSON.stringify(json, null, 2);
+					fs.writeFile(fileName, json, (err) => {
+						if (!err) {
+							console.log("File for user not found, creating one...");
+							console.log(`Done, file made: ${fileName}`)
+						}
+					});
+				}
+			});
+			return message.channel.send("Thank you, report submitted");
 			break;
 		default: //default case, used when an unknown command is given with the prefix
 			message.channel.send("I don't know what to do with this ;-;");
