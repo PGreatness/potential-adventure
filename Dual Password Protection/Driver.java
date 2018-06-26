@@ -36,10 +36,22 @@ public class Driver {
     }
 
     public static void main(String[] args) {
-        Key testKey = new Key("first", "secondStringisMuchLarger");
+        String firstPass;
+        String altPass;
+        try {
+            System.out.print("Please enter your password:");
+            firstPass = in.readLine();
+            }
+        catch(Exception e) { }
+        try {
+            System.out.print("\nPlease enter your recovery password:");
+            altPass = in.readLine();
+            }
+        catch(Exception e) { }
+        Key testKey = new Key(firstPass, altPass);
         Driver test = new Driver(testKey);
         while (!test.guess.equals(test.user.getPassword())) {
-            System.out.println(test.checkUser);
+            System.out.println(test.checkUser); //FOR DEBUGGING ONLY
             test.setGuess();
         }
     }
