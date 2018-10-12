@@ -56,6 +56,33 @@ bot.on("message", function (message) {
 	if (message.content == "hello") {
 		message.channel.send("Hi there!");
 	}
+	console.log(message.content);
+	var filePath = `./Chat Logs/${message.author.username}.json`;
+	var log = `${message.createdAt} ${message.author.username} : ${message.content}`;
+	console.log("trying to access file...");
+	if (!fs.existsSync("./Chat Logs")) {
+		console.log("dir does not exist, making now");
+		fs.mkdirSync("./Chat Logs");
+	}
+
+	fs.exists(filePath, (exists) => {
+		if (exists) {
+			var file = require(filePath);
+			file.ChatLog = file.ChatLog + `, ${log}`;
+			fs.writeFile(filePath, JSON.stringify(file, null, "\t"), (err) => {
+				console.log(err);
+			});
+		}else{
+			console.log("making file....");
+			json = {
+				ChatLog : log
+			}
+			json = JSON.stringify(json, null, "\t");
+			fs.writeFile(filePath, json, (err) => {
+				console.log(err);
+			});
+		}
+	});
 	//Message not meant for bot
 	if (!message.content.startsWith(PREFIX)) return;
 
@@ -78,7 +105,6 @@ bot.on("message", function (message) {
 		 * Returns an embedded message
 		*/
 		case "help":
-			message.channel.send("Hello! There are a multitude of commands available:");
 			var comms = new Discord.RichEmbed()
 				.addField("ping", "Pong!")
 				.addField("info", "Show info about me :3")
@@ -87,20 +113,20 @@ bot.on("message", function (message) {
 				.addField("senpai", "I will always notice you!!!!<3")
 				.addField("game", "Request people to join you in the game! Mention them to exclude from invite.")
 				.addField("how", "Get detailed instructions on how a certain command works!")
+				.addField("report", "Report users for breaching the BNBR contract");
 				//Admin commands
 			if (args[1] === "mod") {
-				comms
-					.addField("Moderator Only:", "Mods are HorselessDude so far")
+					comms.addField("Moderator Only:", "Mods are HorselessDude so far")
 					.addField("kick", "Kicks user. Requires a reason!")
 					.addField("ban", "Bans a user. Requires a reason after the name. Message deletion days are optional.")
 					.setColor('ORANGE')
 					.setThumbnail(bot.user.avatarURL);
 			}else{
-				comms
-					.setColor('ORANGE')
+					comms.setColor('ORANGE')
 					.setThumbnail(bot.user.avatarURL);
 			}
-			message.channel.send(comms);
+			console.log(comms);
+			return message.channel.send("Hello! There are a multitude of commands available:", comms);
 			break;
 			/**
 			 * Command: HOW
@@ -132,11 +158,17 @@ bot.on("message", function (message) {
 				case "embed":
 					uEmbed.addField("!embed", "Recieve embedded message. WIP");
 					break;
+				case "report": 
+					uEmbed.addField("!report [MENTIONED PERSON] [REASON]", "Report a person for breaching of the BNBR contract");
+					break;
 				case "senpai":
 					uEmbed.addField("!senpai", "Become noticed by me :3");
 					break;
 				case "game":
 					uEmbed.addField("!game [EXCLUDE][EXCLUDE]...", "Mention people to play with you. You must be in a voice channel **and** playing a game in order to use this commmand. Mention people after the command to exclude them");
+					break;
+				case "how":
+					uEmbed.addField("!how [COMMAND]", "This is how you are viewing this dummy! Use this to see how to use some of the commands");
 					break;
 				case "kick":
 					uEmbed.addField("!kick [MENTIONED PERSON] [REASON]", "Kick a person. They must be mentioned **and** a reason to do so must be given.");
@@ -248,7 +280,7 @@ bot.on("message", function (message) {
 				.addField(`${message.author.username} asked you to play!`, `Playing: ***${playingGame}***` )
 				.addField(`Join now in ${message.member.voiceChannel.name}!`, `${voicersArr}`);
 			return message.channel.send(gembed);
-			break;
+		break;
 		case "spam":
 		/**
 		 * Command: SPAM
@@ -297,8 +329,10 @@ bot.on("message", function (message) {
 			let messageArray = message.content.split(" ");
 			let reason = messageArray.splice(2).join(" ");
 			let toKick = message.mentions.users.first();
-			if (toKick === bot.user)
+			if (toKick === bot.user) {
+				console.log(`Kick attempted on bot by ${author}`);
 				return message.channel.send("You can't kick bots!!");
+			}
 			if (toKick == null)
 				return message.channel.send("Please mention someone. Don't just write their name!");
 			if (message.mentions.members.first().hasPermission("ADMINISTRATOR"))
@@ -333,13 +367,16 @@ bot.on("message", function (message) {
 		let sender = message.author.username;
 		let messages = message.content.split(" ");
 		let banReason = messages.splice(2).join(" ");
-		let banning = message.mentions.users.first();
+		let banning = message.mentions.members.first();
+		console.log(banReason);
 		let days = 0;
 		if (messages[3]) {
 			days = messages.content.splice(3).join(" ");
 		}
-		if (banning === bot.user)
+		if (banning.user === bot.user) {
+			console.log(`Ban attempted on bot by ${sender}`);
 			return message.channel.send("Nice try. You can't ban bots nub! >:D");
+		}
 		if (banning == null)
 			return message.channel.send("Look here. Banning requires me to know who it is and YOU WON'T MENTION THEM. HOW WOULD I KNOW IT'S WHO YOU WANT!");
 		if (banning.hasPermission("ADMINISTRATOR"))
@@ -349,12 +386,12 @@ bot.on("message", function (message) {
 		if (!banning)
 			return message.channel.send("You didn't say who!");
 		if (!banReason)
-			return message.channel.send("Please provide a reason to never see this person again (or maybe for a while)");
+			return message.channel.send("Please provide a reason to never see this person again (or maybe for a while) :3");
 			message.guild.member(banning).ban({days, banReason});
 			const banEmbed = new Discord.RichEmbed()
-				.setAuthor(`${banning.username} was banned by ${sender}`, banning.displayAvatarURL)
+				.setAuthor(`${banning.user.username} was banned by ${sender}`, banning.user.displayAvatarURL)
 				.addField("Ban Information:", "*User Banned*")
-				.addField("Banned:", `${banning.tag}`)
+				.addField("Banned:", `${banning.user.tag}`)
 				.addField("Moderator: ", `${message.author.tag}`)
 				.addField("Reason:", `${banReason}`)
 				.addField("Days:", days);
@@ -378,19 +415,34 @@ bot.on("message", function (message) {
 			}
 			return message.channel.send(timeEmbed);
 			break;
-		case "report": //WIP
+		case "report": 
+			try { 
+			if (bot.user.username == message.mentions.users.first().username) {
+				console.log(`Report attempted on bot by ${message.author.username}`);
+				return message.channel.send("I'm sorry, but bot users cannot be reported");
+			}
+			//remove to not be able to report ADMINS
+			/*if (message.mentions.members.first().hasPermission("ADMINISTRATOR")) {
+				console.log(`Report made on ${message.mentions.users.first().username} by ${message.author.username}`);
+				return message.channel.send(`Report cannot be made on ${message.mentions.users.first().username}. Has ADMIN permissions`);
+			}*/
+			} catch(err) {return message.channel.send("Error encountered");}
 			if (!args[1]) {
 				return message.channel.send("No one mentioned");
 			}
 			if (!args[2]) {
 				return message.channel.send("Please submit a reason");
 			}
-			var fileName = `./${message.mentions.users.first().username}.json`;
+			if (!fs.existsSync("./Reports")) {
+				console.log("Report Folder does not exist, making it right now...");
+				fs.mkdirSync("./Reports");
+			}
+			var fileName = `./Reports/${message.mentions.users.first().username}.json`;
 			fs.exists(fileName, function(exists) {
 				if (exists) {
 					console.log("File against user exists, writing to file...");
 					var file = require(fileName);
-					file.report = file.report + `, ${args[2]}`;
+					file.report = file.report + `, ${message.content.split(" ").splice(2).join(" ")}`;
 					file.reportCount = file.reportCount + 1;
 					fs.writeFile(fileName, JSON.stringify(file, null, 2), function(err) {
 						if (err) {
@@ -413,8 +465,8 @@ bot.on("message", function (message) {
 						}
 					});
 				}
+				return message.channel.send("Thank you, report submitted");
 			});
-			return message.channel.send("Thank you, report submitted");
 			break;
 		default: //default case, used when an unknown command is given with the prefix
 			message.channel.send("I don't know what to do with this ;-;");
