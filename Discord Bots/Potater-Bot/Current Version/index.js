@@ -479,27 +479,32 @@ bot.on("message", async function (message) {
 			 * @param: None
 			 * Pauses the music if there is any playing
 			 */
-			case "pause":
-				var voice = message.member.voiceChannel
-				if (!voice){
-					return message.channel.send('You need to be in a voice channel to play music!');
+		case "pause":
+			var voice = message.member.voiceChannel
+			if (!voice){
+				return message.channel.send('You need to be in a voice channel to play music!');
+			}
+			const permis = voice.permissionsFor(message.client.user)
+			if (!permis.has('CONNECT') || !permis.has('SPEAK')) {
+				return message.channel.send("I need to be able to connect and speak in voice channels for that!")
+			}
+			try {
+				let p = voice.connection.dispatcher.paused
+				if (p) {
+					voice.connection.dispatcher.resume()
+					return message.channel.send('Successfully resumed the music')
+				}else{
+					voice.connection.dispatcher.pause()
+					return message.channel.send('Successfully paused the music')
 				}
-				const permis = voice.permissionsFor(message.client.user)
-				if (!permis.has('CONNECT') || !permis.has('SPEAK')) {
-					return message.channel.send("I need to be able to connect and speak in voice channels for that!")
-				}
-				try {
-					let p = voice.connection.dispatcher.paused
-					if (p) {
-						voice.connection.dispatcher.resume()
-						return message.channel.send('Successfully resumed the music')
-					}else{
-						voice.connection.dispatcher.pause()
-						return message.channel.send('Successfully paused the music')
-					}
-				} catch {
-					return message.channel.send("There currently isn't any music to pause!")
-				}
+			} catch {
+				return message.channel.send("There currently isn't any music to pause!")
+			}
+		break;
+
+
+		case "save":
+
 		break;
 		case "ban":
 		/**
