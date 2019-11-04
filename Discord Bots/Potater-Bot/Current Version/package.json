@@ -1,0 +1,26 @@
+{
+  "name": "potater-bot",
+  "version": "1.0.0",
+  "description": "The source code for Potater-Bot, a helpful Discord bot.",
+  "main": "index.js",
+  "dependencies": {
+    "package-lock.json": "^1.0.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/PGreatness/potential-adventure.git"
+  },
+  "keywords": [
+    "Discord"
+  ],
+  "author": "Ahnaf Hasan",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/PGreatness/potential-adventure/issues"
+  },
+  "homepage": "https://github.com/PGreatness/potential-adventure#readme"
+}
