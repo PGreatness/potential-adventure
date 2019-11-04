@@ -71,3 +71,15 @@
 ehthumbs.db
 
 Thumbs.db
+
+# Node folders #
+
+########################
+
+node_modules
+
+# VSCode Folder #
+
+########################
+
+.vscode
