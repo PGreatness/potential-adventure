@@ -29,6 +29,7 @@ const commandsOnlyChannels = ['music-requests']
 // This is the list of music requests that the bot has received
 var musicList = new Queue()
 var currentlyPlaying = false
+var last_Play = null
 
 //derp batman image
 var bat = "https://vignette.wikia.nocookie.net/warframe/images/5/5f/Batman_derp_by_uchihirokilove-d59h7in.png/revision/latest?cb=20151020102248";
@@ -79,24 +80,19 @@ bot.on("message", async function (message) {
 		fs.mkdirSync("./Chat Logs");
 	}
 
-	fs.exists(filePath, (exists) => {
-		if (exists) {
-			var file = require(filePath);
-			file.ChatLog.push(log)
-			fs.writeFile(filePath, JSON.stringify(file, null, "\t"), (err) => {
-				console.log(err);
-			});
-		}else{
-			console.log("making file....");
-			json = {
-				ChatLog : [log]
-			}
-			json = JSON.stringify(json, null, "\t");
-			fs.writeFile(filePath, json, (err) => {
-				console.log(err);
-			});
-		}
-	});
+	var json = {
+		ChatLog : [log]
+	}
+	json = JSON.stringify(json, null, "\t")
+	if (fs.existsSync(filePath)) {
+		var file = require(filePath)
+		file.ChatLog.push(log)
+		fs.writeFileSync(filePath, JSON.stringify(file, null, "\t"))
+	}else{
+		console.log("making file...")
+		fs.writeFileSync(filePath, json)
+	}
+	
 	//Message not meant for bot
 	if (!message.content.startsWith(PREFIX)) return;
 
@@ -427,7 +423,8 @@ bot.on("message", async function (message) {
 				return message.channel.send(`There is currently a music begin played. Your request is currently **number ${musicList.size()}** on the waiting list`)
 			}
 			var youtube = new YouTube(YOUTUBE_API_KEY)
-			var nextToPlay = musicList.isEmpty() ? args.slice(1).join(' ') : musicList.dequeue()
+			musicList.enqueue(args.slice(1).join(' '))
+			var nextToPlay = musicList.dequeue()
 			var videos = await youtube.searchVideos(nextToPlay || "music")
 
 			var play_video = async function(channel, vids, sendChannel, errChannel) {
@@ -435,6 +432,7 @@ bot.on("message", async function (message) {
 					const stream = ytdl(vids.url, { filter : 'audioonly' })
 					const dispatcher = connection.playStream(stream)
 					currentlyPlaying = true
+					last_Play = videos.title
 
 					dispatcher.on('end', ()=>{
 						console.log('Song ended!')
@@ -502,8 +500,41 @@ bot.on("message", async function (message) {
 			}
 		break;
 
-
+		/**
+		 * Command: SAVE
+		 * @param: None || String
+		 * Saves the current playlist for the user. Can take in a String, the name of
+		 * the playlist. Nameless playlists append to the default one
+		 */
 		case "save":
+			var newQueue = musicList.copy()
+			newQueue.enqueue(last_Play)
+			var playlist_name = args.slice(1).join(' ') || 'default'
+
+			var filePath = `./Playlists/${message.author.username}.json`;
+			console.log("trying to access file...");
+
+			if (!fs.existsSync(`./Playlists`)) {
+				console.log(`Playlists folder doesn't exist, creating now`)
+				fs.mkdirSync(`./Playlists`)
+			}
+
+			var json = {
+				[playlist_name] : newQueue
+			}
+			json = JSON.stringify(json, null, "\t")
+
+			if (!fs.existsSync(filePath)) {
+				console.log(`User ${message.author.username} doesn't have a file, creating now`)
+				fs.writeFileSync(filePath, json)
+			}else{
+				var file = require(filePath)
+				if (playlist_name == 'default') {
+					file[playlist_name].push(newQueue)
+				}else{
+					fs.writeFileSync(filePath, json)
+				}
+			}
 
 		break;
 		case "ban":
