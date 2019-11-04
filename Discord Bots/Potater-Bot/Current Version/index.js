@@ -16,6 +16,7 @@ const Discord = require("discord.js"); //REQUIRED
 const botSettings = require("./bot-settings.json"); //uses TOKEN in bot-settings.json
 const userSettings = require("./user-settings.json"); //uses data gathered on users WIP
 const YouTube = require('discord-youtube-api') // used for music, WIP
+const Queue = require('./queue.js').Queue
 const ytdl = require('ytdl-core') // used for music, WIP
 const TOKEN = botSettings.TOKEN; //login token, REQUIRED
 var YOUTUBE_API_KEY = botSettings.YT_API_KEY // The API Key for YouTube
@@ -24,6 +25,11 @@ const fs = require('fs'); //file creating method
 var bot = new Discord.Client();
 var repeater = "https://www.youtube.com/watch?v=Lkcvrxj0eLY"; // classical music
 const commandsOnlyChannels = ['music-requests']
+
+// This is the list of music requests that the bot has received
+var musicList = new Queue()
+var currentlyPlaying = false
+
 //derp batman image
 var bat = "https://vignette.wikia.nocookie.net/warframe/images/5/5f/Batman_derp_by_uchihirokilove-d59h7in.png/revision/latest?cb=20151020102248";
 var att = new Discord.RichEmbed().addField("bats", ":3").setImage(bat);
@@ -416,23 +422,37 @@ bot.on("message", async function (message) {
 			if (!perms.has('CONNECT') || !perms.has('SPEAK')) {
 				return message.channel.send("I need to be able to connect and speak in the Music Channel for that!")
 			}
+			if (currentlyPlaying) {
+				musicList.enqueue(args.slice(1).join(' '))
+				return message.channel.send(`There is currently a music begin played. Your request is currently **number ${musicList.size()}** on the waiting list`)
+			}
 			var youtube = new YouTube(YOUTUBE_API_KEY)
-			const videos = await youtube.searchVideos(args.slice(1).join(' ') || "music")
-			voice.join().then(async connection => {
-				const stream = ytdl(videos.url, { filter : 'audioonly' })
-				const dispatcher = connection.playStream(stream)
-				currPlay = videos.url
+			var nextToPlay = musicList.isEmpty() ? args.slice(1).join(' ') : musicList.dequeue()
+			var videos = await youtube.searchVideos(nextToPlay || "music")
 
-				dispatcher.on('end', () => {
-					console.log('Song ended!');
-					currPlay = repeater;
-					played.send(`Did you like it? Here it is: ${videos.url}`);
-					voice.leave();
+			var play_video = async function(channel, vids, sendChannel, errChannel) {
+				channel.join().then(async connection=>{
+					const stream = ytdl(vids.url, { filter : 'audioonly' })
+					const dispatcher = connection.playStream(stream)
+					currentlyPlaying = true
+
+					dispatcher.on('end', ()=>{
+						console.log('Song ended!')
+						currentlyPlaying = false
+						sendChannel.send(`Did you like it? Here it is: ${vids.url}`)
+						if (!musicList.isEmpty()) {
+							youtube.searchVideos(musicList.dequeue()).then((video)=>{
+								play_video(channel, video, sendChannel, errChannel)
+							})
+						}
+						channel.leave()
+					})
+				}, fail =>{
+					console.log(fail)
+					return errChannel.send(`An error has occurred`)
 				})
-			}, fail => {
-				console.log(fail)
-				return message.channel.send('An error has ocurred')
-			})
+			}
+			play_video(voice, videos, played, message.channel)
 			break;
 		/**
 		 * Command: STOP
