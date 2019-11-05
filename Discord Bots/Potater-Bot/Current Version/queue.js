@@ -1,6 +1,6 @@
 class Queue {
-    constructor() {
-        this.items = []
+    constructor(arr=[]) {
+        this.items = arr
     }
 
     enqueue(elem) {
@@ -44,6 +44,24 @@ class Queue {
 
     size() {
         return this.items.length
+    }
+
+    copy() {
+        var ret = new Queue()
+        for (i = 0; i < this.items.length; i++) {
+            ret.enqueue(this.items[i])
+        }
+        return ret
+    }
+
+    uniqueCopy() {
+        var tmp = []
+        for (i = 0; i < this.items.length; i++) {
+            if (!tmp.includes(this.items[i])) {
+                tmp.push(this.items[i])
+            }
+        }
+        return tmp
     }
 }
 
