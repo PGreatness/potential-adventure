@@ -92,7 +92,7 @@ bot.on("message", async function (message) {
 		console.log("making file...")
 		fs.writeFileSync(filePath, json)
 	}
-	
+
 	//Message not meant for bot
 	if (!message.content.startsWith(PREFIX)) return;
 
@@ -509,6 +509,7 @@ bot.on("message", async function (message) {
 		case "save":
 			var newQueue = musicList.copy()
 			newQueue.enqueue(last_Play)
+			newQueue = newQueue.uniqueCopy()
 			var playlist_name = args.slice(1).join(' ') || 'default'
 
 			var filePath = `./Playlists/${message.author.username}.json`;
@@ -529,12 +530,12 @@ bot.on("message", async function (message) {
 				fs.writeFileSync(filePath, json)
 			}else{
 				var file = require(filePath)
-				if (playlist_name == 'default') {
-					file[playlist_name].push(newQueue)
-				}else{
-					fs.writeFileSync(filePath, json)
-				}
+				console.log(file['default'])
+				file[playlist_name] = newQueue
+				fs.writeFileSync(filePath, JSON.stringify(file, null, "\t"))
 			}
+
+			// musicList.print()
 
 		break;
 		case "ban":
