@@ -507,6 +507,9 @@ bot.on("message", async function (message) {
 		 * the playlist. Nameless playlists append to the default one
 		 */
 		case "save":
+			if (musicList.isEmpty() || last_Play == null) {
+				return message.channel.send(`Nothing's playing!`)
+			}
 			var newQueue = musicList.copy()
 			newQueue.enqueue(last_Play)
 			newQueue = newQueue.uniqueCopy()
@@ -535,8 +538,39 @@ bot.on("message", async function (message) {
 				fs.writeFileSync(filePath, JSON.stringify(file, null, "\t"))
 			}
 
+			return message.channel.send(`Current playlist saved under the name **${playlist_name}**!`)
 			// musicList.print()
 
+		break;
+		/**
+		 * Command: LOAD
+		 * @param: None || String
+		 * Loads a user's playlist
+		 */
+		case "load":
+			if (!fs.existsSync('./Playlists')) {
+				console.log(`Playlist folder doesn't exist, creating now`)
+				fs.mkdirSync('./Playlists')
+				return message.channel.send(`There isn't a playlist for you! Create one now with **!save**`)
+			}
+
+			if (!fs.existsSync(`./Playlists/${message.author.username}.json`)) {
+				console.log(`Playlist file for user doesn't exist`)
+				return message.channel.send(`You haven't saved a playlist yet! Create one now with **!save**`)
+			}
+			var play_name = args.slice(1).join(' ') || 'default'
+			var file = require(`./Playlists/${message.author.username}.json`)
+			if (file[play_name] == undefined) {
+				return message.channel.send(`I couldn't find a playlist **${play_name}**. You can see your playlists with the command **!lists**`)
+			}
+			var names = ''
+			musicList.clear()
+			for (i = 0; i < file[play_name].length; i++) {
+				musicList.enqueue(file[play_name][i])
+				names += `${i + 1}) **${file[play_name][i]}**\n`
+			}
+			message.channel.send(`Congrats! You have queued a total of **${file[play_name].length}** songs!`)
+			return message.channel.send(names)
 		break;
 		case "ban":
 		/**
@@ -544,7 +578,7 @@ bot.on("message", async function (message) {
 		 * @param: User Mention,
 		 *         String
 		 * Takes a mentioned user and bans the person from the guild. A reason is required.
-		 * Returns an embedded message detailing the ban. Banned person Receives a direct 
+		 * Returns an embedded message detailing the ban. Banned person Receives a direct
 		 * message(DM) of the embed as well
 		*/
 		let sender = message.author.username;

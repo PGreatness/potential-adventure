@@ -63,6 +63,10 @@ class Queue {
         }
         return tmp
     }
+
+    clear() {
+        this.items = []
+    }
 }
 
 module.exports = {
