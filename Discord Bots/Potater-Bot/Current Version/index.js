@@ -425,7 +425,12 @@ bot.on("message", async function (message) {
 			var youtube = new YouTube(YOUTUBE_API_KEY)
 			musicList.enqueue(args.slice(1).join(' '))
 			var nextToPlay = musicList.dequeue()
-			var videos = await youtube.searchVideos(nextToPlay || "music")
+			try{
+				var videos = await youtube.searchVideos(nextToPlay || "music")
+			}catch(e) {
+				console.log(e)
+				return message.channel.send(`Woops! I can't search for music anymore... :(\nTry again tomorrow`)
+			}
 
 			var play_video = async function(channel, vids, sendChannel, errChannel) {
 				channel.join().then(async connection=>{
@@ -571,6 +576,18 @@ bot.on("message", async function (message) {
 			}
 			message.channel.send(`Congrats! You have queued a total of **${file[play_name].length}** songs!`)
 			return message.channel.send(names)
+		break;
+
+		case "tracks":
+			var tracks = `${last_Play}\n`
+			if (!currentlyPlaying) {
+				return message.channel.send(`There currently isn't any songs playing.`)
+			}
+			var cloned = musicList.copy()
+			while(!cloned.isEmpty()) {
+				tracks += `${cloned.dequeue()}\n`
+			}
+			return message.channel.send(`These are in the song queue:\n${tracks}`)
 		break;
 		case "ban":
 		/**
