@@ -1,4 +1,3 @@
 {
-    "ignore": ["user-settings.json", "bot-settings.json"]
-    
+    "ignore": ["user-settings.json", "bot-settings.json", "./Chat Logs/", "./Playlists"]
 }
