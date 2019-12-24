@@ -1,8 +1,8 @@
 /**
  * This is the almost complete JavaScript code of the Discord bot, Potater-Bot.
  * All essential and private variables have been hidden in a non-uploaded file to avoid
- * falling in the wrong hands. These will work given that bot-settings.json and
- * user-settings.json have been provided in the same directory as the code for Potater-Bot.
+ * falling in the wrong hands. These will work given that bot-settings.json
+ *  have been provided in the same directory as the code for Potater-Bot.
  * This code is free to use for anyone as long as credit is given to the original source.
  * The code is undergoing constant updates. Any suggestions provided will be extremely
  * helpful and aid the fulfillment of this project. Thank you.
@@ -14,7 +14,6 @@
 //USES NODEMON, PLEASE HAVE NODEMON INSTALLED
 const Discord = require("discord.js"); //REQUIRED
 const botSettings = require("./bot-settings.json"); //uses TOKEN in bot-settings.json
-const userSettings = require("./user-settings.json"); //uses data gathered on users WIP
 const YouTube = require('discord-youtube-api') // used for music, WIP
 const Queue = require('./queue.js').Queue
 const ytdl = require('ytdl-core') // used for music, WIP
