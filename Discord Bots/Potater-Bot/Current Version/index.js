@@ -28,8 +28,10 @@ const commandsOnlyChannels = ['music-requests']
 
 // This is the list of music requests that the bot has received
 var musicList = new Queue()
+var fuzzy = require('fuzzyset.js')
 var currentlyPlaying = false
 var last_Play = null
+var jukebox = fuzzy([], false)
 
 //derp batman image
 var bat = "https://vignette.wikia.nocookie.net/warframe/images/5/5f/Batman_derp_by_uchihirokilove-d59h7in.png/revision/latest?cb=20151020102248";
@@ -68,9 +70,10 @@ bot.on("message", async function (message) {
 		var old = await message.delete()
 		return message.author.send(`Sorry, but this channel(**${message.channel.name}**) in **${message.member.guild.name}** does not allow chatting! Only commands are accepted there`)
 	}
-	if (message.content == "hello") {
+	if (message.content.toLowerCase() == "hello") {
 		message.channel.send(`Hi there! I'm ${bot.user.username} and you can interact with me using **${PREFIX}**!`);
 	}
+	// Chat Logging System
 	console.log(message.content);
 	var filePath = `./Chat Logs/${message.author.username}.json`;
 	var log = `${message.createdAt} ${message.author.username} : ${message.content}`;
@@ -91,6 +94,20 @@ bot.on("message", async function (message) {
 	}else{
 		console.log("making file...")
 		fs.writeFileSync(filePath, json)
+	}
+
+	// Music Info Logging System
+	if (!fs.existsSync('./Requests')) {
+		console.log("Requests folder doesn't exist, creating now")
+		fs.mkdirSync('./Requests')
+	}
+	if (!fs.existsSync('./Requests/Jukebox.json')) {
+		console.log("Jukebox.json doesn't exist, creating now")
+		var jukes = {
+			"Classical" : "https://www.youtube.com/watch?v=Lkcvrxj0eLY"
+		}
+		fs.writeFileSync('./Requests/Jukebox.json', JSON.stringify(jukes, null, '\t'))
+		jukebox.add('Classical')
 	}
 
 	//Message not meant for bot
@@ -387,13 +404,23 @@ bot.on("message", async function (message) {
 			break;
 		// MUSIC COMMANDS
 		// ------------------ V ---------------
-		/**
+		/** WIP
 		 * Command: PLAY
 		 * @param: None | String
 		 * Takes the given string and searches it on YouTube for the corresponding video.
 		 * Play the audio file in a Voice Channel.
 		 */
 		case "play":
+			console.log(jukebox.values().length == 0)
+			var fw = require('./Requests/Jukebox.json')
+			for (song in fw) {
+				jukebox.add(song)
+			}
+			if (jukebox.values().length == 0) {
+				console.log("adding classical")
+				jukebox.add("Classical")
+			}
+
 			var voice = message.member.voiceChannel
 			var played = message.channel
 			var channels = message.member.guild.channels
@@ -424,40 +451,94 @@ bot.on("message", async function (message) {
 			}
 			var youtube = new YouTube(YOUTUBE_API_KEY)
 			musicList.enqueue(args.slice(1).join(' '))
-			var nextToPlay = musicList.dequeue()
-			try{
-				var videos = await youtube.searchVideos(nextToPlay || "music")
-			}catch(e) {
-				console.log(e)
-				return message.channel.send(`Woops! I can't search for music anymore... :(\nTry again tomorrow`)
+			var nextToPlay = musicList.dequeue() || "music"
+			var file = require('./Requests/Jukebox.json')
+			var videos = null
+			var closest = jukebox.get(nextToPlay)
+			console.log(jukebox.get(nextToPlay))
+			console.log(jukebox.values())
+			if (closest != null) {
+				var closest_name = closest[0][1]
+				videos = {
+					title : closest_name,
+					url : file[closest_name]
+				}
+			}else{
+				try{
+					// console.log(jukebox.values())
+					videos = await youtube.searchVideos(nextToPlay)
+					jukebox.add(nextToPlay)
+					file[nextToPlay] = videos.url
+					fs.writeFileSync('./Requests/Jukebox.json', JSON.stringify(file, null, '\t'))
+				}catch(e) {
+					console.log(e)
+					return message.channel.send(`Woops! I can't search for music anymore... :(\nTry again tomorrow`)
+				}
 			}
 
+			console.log(videos)
+			// console.log(jukebox)
+			/**
+			 * Plays the video requested and any queued videos as well
+			 * @param {Discord.VoiceChannel} channel the voice channel
+			 * @param {YouTube.Video} vids the youtube video
+			 * @param {Discord.TextChannel} sendChannel the original channel request was given on
+			 * @param {Discord.TextChannel} errChannel the channel to send errors to
+			 */
 			var play_video = async function(channel, vids, sendChannel, errChannel) {
-				channel.join().then(async connection=>{
+				console.log(`Joinable?: ${channel.joinable}`)
+				channel.join().then(connection=>{
 					const stream = ytdl(vids.url, { filter : 'audioonly' })
-					const dispatcher = connection.playStream(stream)
+					var dispatcher = connection.playStream(stream)
+					console.log(`Currently speaking? : ${connection.speaking}`)
+					console.log(`playing music for ${vids.title}`)
+					console.log(vids)
 					currentlyPlaying = true
-					last_Play = videos.title
+					last_Play = vids.title
 
 					dispatcher.on('end', ()=>{
 						console.log('Song ended!')
 						currentlyPlaying = false
 						sendChannel.send(`Did you like it? Here it is: ${vids.url}`)
+						console.log(musicList.isEmpty())
 						if (!musicList.isEmpty()) {
-							youtube.searchVideos(musicList.dequeue()).then((video)=>{
-								play_video(channel, video, sendChannel, errChannel)
-							})
+							var next = musicList.dequeue() || "music"
+							var match = jukebox.get(next)
+							var next_video = null
+							var f = require('./Requests/Jukebox.json')
+							if (match != null) {
+								console.log("got here")
+								var closest_match = match[0][1]
+								next_video = {title:closest_match, url:file[closest_match]}
+								console.log(`1. This is the video: ${closest_match}, ${next_video.url}`)
+								play_video(channel, next_video, sendChannel, errChannel)
+							}else{
+								try{
+									youtube.searchVideos(next).then((video)=>{
+										next_video = video
+										jukebox.add(next)
+										f[next] = video.url
+										fs.writeFileSync('./Requests/Jukebox.json', JSON.stringify(file, null, '\t'))
+										console.log(`2. This is the video: ${next_video.title}, ${next_video.url}`)
+										play_video(channel, next_video, sendChannel, errChannel)
+									})
+								}catch(e){
+									console.log(e)
+									return message.channel.send("Oh no! I can't search for new songs right now :(")
+								}
+							}
 						}
-						channel.leave()
+						connection.disconnect()
+						console.log(`Successfully disconnected from the channel`)
 					})
-				}, fail =>{
-					console.log(fail)
-					return errChannel.send(`An error has occurred`)
+				}).catch(reason=>{
+					console.log(reason)
+					return errChannel.send("An error has occurred")
 				})
 			}
 			play_video(voice, videos, played, message.channel)
 			break;
-		/**
+		/** WIP
 		 * Command: STOP
 		 * @param: None
 		 * Stops the music if there is any playing.
@@ -472,12 +553,14 @@ bot.on("message", async function (message) {
 					return message.channel.send("I need to be able to connect and speak in voice channels for that!")
 				}
 				try {
-					voice.connection.dispatcher.end("Music stopped")
-				} catch {
+					voice.connection.dispatcher.end()
+					return message.channel.send("Music stopped")
+				} catch(e) {
+					console.log(e)
 					return message.channel.send("There currently isn't any music playing!")
 				}
 				break;
-			/**
+			/** WIP
 			 * Command: PAUSE
 			 * @param: None
 			 * Pauses the music if there is any playing
@@ -588,6 +671,65 @@ bot.on("message", async function (message) {
 				tracks += `${cloned.dequeue()}\n`
 			}
 			return message.channel.send(`These are in the song queue:\n${tracks}`)
+		break;
+
+		/**
+		 * Command: DEL
+		 * @param: None
+		 * Deletes a playlist that the user has created
+		 */
+		case "del":
+			var channel = message.channel
+			if (channel.type != "dm") {
+				message.author.send("Hello. You have requested to edit your song list and can do so here")
+				return message.channel.send("In order to avoid spam, you can edit your song playlists in the DMs. Check yours for the one I sent you just now")
+			}
+			if (!fs.existsSync(`./Playlists`)) {
+				console.log("Playlists folder doesn't exist, creating...")
+				fs.mkdirSync('./Playlists')
+			}
+			if (!fs.existsSync(`./Playlists/${message.author.username}.json`)) {
+				return message.author.send('You currently do not have any playlists to edit. Please add one in order to edit')
+			}
+			message.author.send("Which playlist(s) would you like to edit?")
+			var user_playlist = require(`./Playlists/${message.author.username}.json`)
+			var lists = ``
+			var playlists = []
+			for (name in user_playlist) {
+				lists += `**${name}**`
+				playlists.push(name.toLowerCase())
+				for (i = 0; i < user_playlist[name].length;i++) {
+					lists += `\t${user_playlist[name][i]}\n`
+				}
+			}
+			message.author.send(lists)
+			const collector = new Discord.MessageCollector(message.channel, m=>m.author.id === message.author.id, {time: 3000})
+			// console.log(collector)
+			var chosen = null
+			collector.on('collect', message=>{
+				console.log(`This is message: ${message}`)
+				if (!playlists.includes(message.content.toLowerCase())) {
+					return message.author.send(`That playlist does not exist`)
+				}
+				console.log(playlists)
+				console.log(playlists[message.content.trim()])
+				console.log(playlists[message.content.toLowerCase().trim()])
+				var pl = playlists.indexOf(message.content.trim()) || playlists.indexOf(message.content.toLowerCase().trim())
+				chosen = message.content
+				message.author.send(`Would you like to delete this playlist?\n**${playlists[pl]}**:\t${user_playlist[playlists[pl]]}`)
+				const coll2 = new Discord.MessageCollector(message.channel,m=>m.author.id === message.author.id, {time:5000})
+				coll2.on('collect', message=>{
+					if (message.content.toLowerCase().startsWith('y')) {
+						console.log(`User wants to delete playlist`)
+						delete user_playlist[chosen] || user_playlist[chosen.toLowerCase()]
+						fs.writeFileSync(`./Playlists/${message.author.username}.json`, JSON.stringify(user_playlist, null, '\t'))
+						return message.author.send(`Playlist ${chosen} deleted! :)`)
+					}else{
+						console.log(`Confirmation not given`)
+						return message.author.send(`Confirmation not given for deletion`)
+					}
+				})
+			})
 		break;
 		case "ban":
 		/**
