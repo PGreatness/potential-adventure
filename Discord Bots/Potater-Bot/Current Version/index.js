@@ -142,6 +142,10 @@ bot.on("message", async function (message) {
 				.addField('play', "Play some music!")
 				.addField('stop', 'Stop the music')
 				.addField('pause', 'Pause/Resume the music')
+				.addField(`tracks`, `Shows the songs in queue`)
+				.addField('save', 'Saves the current playlist as the user\'s playlist')
+				.addField('load', 'Loads one of the user\'s playlist straight into the queue')
+				.addField(`lists`, "Displays the playlists that the user has saved")
 				.addField('bnbr', "Read the BNBR Policy")
 				.addField("report", "Report users for breaching the BNBR contract");
 				//Admin commands
@@ -224,6 +228,8 @@ bot.on("message", async function (message) {
 				case "pause":
 					uEmbed.addField(`${PREFIX}pause`, "Pauses the currently playing music. If already paused, resumes the music")
 					break;
+				case "tracks":
+					uEmbed.addField(`${PREFIX}tracks`, `Shows a list of the tracks that are currently playing and in queue`)
 				default:
 					uEmbed.addField("This command does not exist", "Try again");
 					break;
@@ -660,6 +666,33 @@ bot.on("message", async function (message) {
 			return message.channel.send(names)
 		break;
 
+		case "lists":
+			if (!fs.existsSync('./Playlists')) {
+				console.log(`Playlist folder doesn't exist, creating now`)
+				fs.mkdirSync('./Playlists')
+				return message.channel.send(`There isn't a playlist for you! Create one now with **!save**`)
+			}
+			if (!fs.existsSync(`./Playlists/${message.author.username}.json`)) {
+				console.log(`Playlist file for user doesn't exist`)
+				return message.channel.send(`You haven't saved a playlist yet! Create one now with **!save**`)
+			}
+			var user_playlist = require(`./Playlists/${message.author.username}.json`)
+			var lists = ``
+			var playlists = []
+			for (name in user_playlist) {
+				lists += `**${name}**\n`
+				playlists.push(name.toLowerCase())
+				for (i = 0; i < user_playlist[name].length;i++) {
+					lists += `\t${user_playlist[name][i]}\n`
+				}
+			}
+			return message.channel.send(`You currently have **${playlists.length}** ${playlists.length <= 1 ? "playlist":"playlists"}.\n${lists}`)
+		break;
+		/**
+		 * Command: TRACKS
+		 * @param: None
+		 * Shows the current list of songs playing
+		 */
 		case "tracks":
 			var tracks = `${last_Play}\n`
 			if (!currentlyPlaying) {
@@ -680,7 +713,7 @@ bot.on("message", async function (message) {
 		case "del":
 			var channel = message.channel
 			if (channel.type != "dm") {
-				message.author.send("Hello. You have requested to edit your song list and can do so here")
+				message.author.send("Hello. You have requested to edit your song list and can do so here. Just run a command and we can start to work your lists :D")
 				return message.channel.send("In order to avoid spam, you can edit your song playlists in the DMs. Check yours for the one I sent you just now")
 			}
 			if (!fs.existsSync(`./Playlists`)) {
@@ -695,7 +728,7 @@ bot.on("message", async function (message) {
 			var lists = ``
 			var playlists = []
 			for (name in user_playlist) {
-				lists += `**${name}**`
+				lists += `**${name}**\n`
 				playlists.push(name.toLowerCase())
 				for (i = 0; i < user_playlist[name].length;i++) {
 					lists += `\t${user_playlist[name][i]}\n`
@@ -744,9 +777,10 @@ bot.on("message", async function (message) {
 		let banReason = messages.splice(2).join(" ");
 		let banning = message.mentions.members.first();
 		console.log(banReason);
-		let days = 0;
-		if (messages[3]) {
-			days = messages.content.splice(3).join(" ");
+		let days = 1;
+		if (banReason.split(" ")[banReason.split(" ").length - 1]) {
+			let works = Number.isNaN(banReason.split(" ")[banReason.split(" ").length - 1])
+			days = !works ? banReason.split(" ")[banReason.split(" ").length - 1] : 1;
 		}
 		if (banning.user === bot.user) {
 			console.log(`Ban attempted on bot by ${sender}`);
@@ -782,7 +816,7 @@ bot.on("message", async function (message) {
 		case "bnbr":
 			const bnbrEmbed = new Discord.RichEmbed();
 			const rules = new Map();
-			rules.set('No personal attacks.', 'There isn\' a reason to hurt other people. That\'s just a terrible thing to do.')
+			rules.set('No personal attacks.', 'There isn\'t a reason to hurt other people. That\'s just a terrible thing to do.')
 			rules.set('Swearing is allowed, but keep it in check.', "Excessively swearing just goes and shows that you are a little child.")
 			rules.set('No inappropriate names.', "You can freely change your name, but not everyone wants to receive messages from Hairy Buns.")
 			rules.set('Hate speech is NEVER okay.', "Just no.")
