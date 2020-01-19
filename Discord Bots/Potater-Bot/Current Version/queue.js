@@ -9,14 +9,14 @@ class Queue {
 
     dequeue() {
         if (this.isEmpty()) {
-            return -1
+            return null
         }
         return this.items.shift()
     }
 
     peek() {
         if (this.isEmpty()) {
-            return -1
+            return null
         }
         return this.items[0]
     }

@@ -421,6 +421,9 @@ bot.on("message", async function (message) {
 			console.log(jukebox.values().length == 0)
 			var fw = require('./Requests/Jukebox.json')
 			for (song in fw) {
+				// console.log(fw)
+				console.log(song.length)
+				console.log(typeof song)
 				jukebox.add(song)
 			}
 			if (jukebox.values().length == 0) {
@@ -452,15 +455,17 @@ bot.on("message", async function (message) {
 			if (!perms.has('CONNECT') || !perms.has('SPEAK')) {
 				return message.channel.send("I need to be able to connect and speak in the Music Channel for that!")
 			}
+			musicList.enqueue(args.slice(1).join(' '))
 			if (currentlyPlaying) {
-				musicList.enqueue(args.slice(1).join(' '))
 				return message.channel.send(`There is currently a music begin played. Your request is currently **number ${musicList.size()}** on the waiting list`)
 			}
 			var youtube = new YouTube(YOUTUBE_API_KEY)
-			musicList.enqueue(args.slice(1).join(' '))
+			// musicList.enqueue(args.slice(1).join(' '))
 			var nextToPlay = musicList.dequeue() || "music"
 			var file = require('./Requests/Jukebox.json')
 			var videos = {title: "placeholder", url: "placeholder"}
+			console.log('hereas')
+			console.log(nextToPlay)
 			var closest = jukebox.get(nextToPlay)
 			console.log(jukebox.get(nextToPlay))
 			console.log(jukebox.values())
@@ -474,6 +479,7 @@ bot.on("message", async function (message) {
 				try{
 					// console.log(jukebox.values())
 					videos = await youtube.searchVideos(nextToPlay)
+					console.log(nextToPlay)
 					jukebox.add(nextToPlay)
 					file[nextToPlay] = videos.url
 					fs.writeFileSync('./Requests/Jukebox.json', JSON.stringify(file, null, '\t'))
@@ -505,6 +511,7 @@ bot.on("message", async function (message) {
 						currentlyPlaying = false
 						sendChannel.send(`Did you like it? Here it is: ${vids.url}`)
 						console.log(musicList.isEmpty())
+						console.log(musicList)
 						if (musicList.isEmpty()) {
 							channel.leave()
 							return
