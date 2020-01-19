@@ -140,7 +140,7 @@ bot.on("message", async function (message) {
 				.addField("game", "Request people to join you in the game! Mention them to exclude from invite.")
 				.addField("how", "Get detailed instructions on how a certain command works!")
 				.addField('play', "Play some music!")
-				.addField('stop', 'Stop the music')
+				.addField('skip', 'Skip the music')
 				.addField('pause', 'Pause/Resume the music')
 				.addField(`tracks`, `Shows the songs in queue`)
 				.addField('save', 'Saves the current playlist as the user\'s playlist')
@@ -222,8 +222,8 @@ bot.on("message", async function (message) {
 				case "play":
 					uEmbed.addField(`${PREFIX}play [TITLE]`, "Plays the audio file of the given title")
 					break;
-				case "stop":
-					uEmbed.addField(`${PREFIX}stop`, "Stops the music currently playing")
+				case "skip":
+					uEmbed.addField(`${PREFIX}skip`, "Skips the music currently playing")
 					break;
 				case "pause":
 					uEmbed.addField(`${PREFIX}pause`, "Pauses the currently playing music. If already paused, resumes the music")
@@ -409,7 +409,7 @@ bot.on("message", async function (message) {
 			break;
 		// MUSIC COMMANDS
 		// ------------------ V ---------------
-		/** WIP
+		/**
 		 * Command: PLAY
 		 * @param: None | String
 		 * Takes the given string and searches it on YouTube for the corresponding video.
@@ -494,7 +494,7 @@ bot.on("message", async function (message) {
 			 */
 			var play_video = function(channel, vids, sendChannel, errChannel) {
 				channel.join().then(connection=>{
-					const stream = ytdl(vids.url, {begin: '0ms, 0s, 0m, 0h'})
+					const stream = ytdl(vids.url, { filter: 'audioonly' })
 					const dispatcher = connection.playStream(stream)
 					console.log(`Currently playing ${vids.title} with a link of ${vids.url}`)
 					currentlyPlaying = true
@@ -505,6 +505,10 @@ bot.on("message", async function (message) {
 						currentlyPlaying = false
 						sendChannel.send(`Did you like it? Here it is: ${vids.url}`)
 						console.log(musicList.isEmpty())
+						if (musicList.isEmpty()) {
+							channel.leave()
+							return
+						}
 						if (!musicList.isEmpty()) {
 							var next = musicList.dequeue() || "music"
 							var match = jukebox.get(next)
@@ -513,7 +517,7 @@ bot.on("message", async function (message) {
 							if (match != null) {
 								console.log(`Got here`)
 								var closest_match = match[0][1]
-								next_video = { title: closest_match, url: file[closest_match] }
+								next_video = { title: closest_match, url: f[closest_match] }
 								console.log(`1. This is the video: ${closest_match}, ${next_video.url}`)
 								play_video(channel, next_video, sendChannel, errChannel)
 							}else{
@@ -532,30 +536,31 @@ bot.on("message", async function (message) {
 								}
 							}
 						}
-						console.log(`Successfully disconnected from the channel`)
-						channel.leave()
 					})
 				})
 			}
 			play_video(voice, videos, played, message.channel)
 			break;
-		/** WIP
-		 * Command: STOP
+		/**
+		 * Command: SKIP
 		 * @param: None
-		 * Stops the music if there is any playing.
+		 * Skips the music if there is any playing.
 		 */
-		case "stop":
+		case "skip":
 				var voice = message.member.voiceChannel
 				if (!voice){
-					return message.channel.send('You need to be in a voice channel to stop music!');
+					return message.channel.send('You need to be in a voice channel to skip music!');
 				}
 				const permiss = voice.permissionsFor(message.client.user)
 				if (!permiss.has('CONNECT') || !permiss.has('SPEAK')) {
 					return message.channel.send("I need to be able to connect and speak in voice channels for that!")
 				}
 				try {
+					if (!currentlyPlaying) {
+						throw new Error('No music playing')
+					}
 					voice.connection.dispatcher.end()
-					return message.channel.send("Music stopped")
+					return message.channel.send("Music skipped")
 				} catch(e) {
 					console.log(e)
 					return message.channel.send("There currently isn't any music playing!")
@@ -690,15 +695,20 @@ bot.on("message", async function (message) {
 		 * Shows the current list of songs playing
 		 */
 		case "tracks":
-			var tracks = `${last_Play}\n`
-			if (!currentlyPlaying) {
+			var tracks = `${last_Play != null ? last_Play + " ** ---> (currently playing)**\n" : ""}`
+			if (!currentlyPlaying && musicList.isEmpty()) {
 				return message.channel.send(`There currently isn't any songs playing.`)
 			}
 			var cloned = musicList.copy()
+			console.log(cloned)
 			while(!cloned.isEmpty()) {
-				tracks += `${cloned.dequeue()}\n`
+				var song = cloned.dequeue()
+				console.log(song)
+				if (song != null) {
+					tracks += `${song}\n`
+				}
 			}
-			return message.channel.send(`These are in the song queue:\n${tracks}`)
+			return message.channel.send(`These are in the song queue:\n${tracks}${currentlyPlaying ? "" : `\nMusic has not started yet, tell me to play when you are ready`}`)
 		break;
 
 		/**
