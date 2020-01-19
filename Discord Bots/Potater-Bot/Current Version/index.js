@@ -596,7 +596,8 @@ bot.on("message", async function (message) {
 					voice.connection.dispatcher.pause()
 					return message.channel.send('Successfully paused the music')
 				}
-			} catch {
+			} catch(e) {
+				console.log(e)
 				return message.channel.send("There currently isn't any music to pause!")
 			}
 		break;
@@ -652,17 +653,17 @@ bot.on("message", async function (message) {
 			if (!fs.existsSync('./Playlists')) {
 				console.log(`Playlist folder doesn't exist, creating now`)
 				fs.mkdirSync('./Playlists')
-				return message.channel.send(`There isn't a playlist for you! Create one now with **!save**`)
+				return message.channel.send(`There isn't a playlist for you! Create one now with **${PREFIX}save**`)
 			}
 
 			if (!fs.existsSync(`./Playlists/${message.author.username}.json`)) {
 				console.log(`Playlist file for user doesn't exist`)
-				return message.channel.send(`You haven't saved a playlist yet! Create one now with **!save**`)
+				return message.channel.send(`You haven't saved a playlist yet! Create one now with **${PREFIX}save**`)
 			}
 			var play_name = args.slice(1).join(' ') || 'default'
 			var file = require(`./Playlists/${message.author.username}.json`)
 			if (file[play_name] == undefined) {
-				return message.channel.send(`I couldn't find a playlist **${play_name}**. You can see your playlists with the command **!lists**`)
+				return message.channel.send(`I couldn't find a playlist **${play_name}**. You can see your playlists with the command **${PREFIX}lists**`)
 			}
 			var names = ''
 			musicList.clear()
@@ -678,11 +679,11 @@ bot.on("message", async function (message) {
 			if (!fs.existsSync('./Playlists')) {
 				console.log(`Playlist folder doesn't exist, creating now`)
 				fs.mkdirSync('./Playlists')
-				return message.channel.send(`There isn't a playlist for you! Create one now with **!save**`)
+				return message.channel.send(`There isn't a playlist for you! Create one now with **${PREFIX}save**`)
 			}
 			if (!fs.existsSync(`./Playlists/${message.author.username}.json`)) {
 				console.log(`Playlist file for user doesn't exist`)
-				return message.channel.send(`You haven't saved a playlist yet! Create one now with **!save**`)
+				return message.channel.send(`You haven't saved a playlist yet! Create one now with **${PREFIX}save**`)
 			}
 			var user_playlist = require(`./Playlists/${message.author.username}.json`)
 			var lists = ``
