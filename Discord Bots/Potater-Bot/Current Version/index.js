@@ -422,8 +422,8 @@ bot.on("message", async function (message) {
 			var fw = require('./Requests/Jukebox.json')
 			for (song in fw) {
 				// console.log(fw)
-				console.log(song.length)
-				console.log(typeof song)
+				// console.log(song.length)
+				// console.log(typeof song)
 				jukebox.add(song)
 			}
 			if (jukebox.values().length == 0) {
@@ -443,8 +443,9 @@ bot.on("message", async function (message) {
 			played = w.find((value)=>value.type == 'text')
 			console.log(args.slice(1).join(' '))
 			if (!voice){
-				return message.channel.send('You need to be in the Music Channel to play music!');
+				return message.channel.send('You need to be in a voice channel to play music!');
 			}
+			// Enable to force uses to be in a certain music channel
 			/* if (!voice.name.toLowerCase().includes("music")) {
 				console.log(`Sending ${message.author.username} to the music channel...`)
 				var vChat = w.find((value)=>value.type == 'voice')
@@ -453,7 +454,7 @@ bot.on("message", async function (message) {
 			} */
 			const perms = voice.permissionsFor(message.client.user)
 			if (!perms.has('CONNECT') || !perms.has('SPEAK')) {
-				return message.channel.send("I need to be able to connect and speak in the Music Channel for that!")
+				return message.channel.send("I need to be able to connect and speak in the voice channel for that!")
 			}
 			musicList.enqueue(args.slice(1).join(' '))
 			if (currentlyPlaying) {
@@ -478,7 +479,7 @@ bot.on("message", async function (message) {
 			}else{
 				try{
 					// console.log(jukebox.values())
-					videos = await youtube.searchVideos(nextToPlay)
+					videos = await youtube.searchVideos(nextToPlay + " lyrics")
 					console.log(nextToPlay)
 					jukebox.add(nextToPlay)
 					file[nextToPlay] = videos.url
@@ -529,7 +530,7 @@ bot.on("message", async function (message) {
 								play_video(channel, next_video, sendChannel, errChannel)
 							}else{
 								try{
-									youtube.searchVideos(next).then((video)=>{
+									youtube.searchVideos(next + " lyrics").then((video)=>{
 										next_video = video
 										jukebox.add(next)
 										f[next] = video.url
