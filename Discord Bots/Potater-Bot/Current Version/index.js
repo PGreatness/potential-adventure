@@ -414,6 +414,8 @@ bot.on("message", async function (message) {
 		 * @param: None | String
 		 * Takes the given string and searches it on YouTube for the corresponding video.
 		 * Play the audio file in a Voice Channel.
+		 * @error If there is an error in which the bot connects and immediately leaves, reinstall
+		 * the ytdl-core library to fix the problem
 		 */
 		case "play":
 			console.log(jukebox.values().length == 0)
@@ -440,12 +442,12 @@ bot.on("message", async function (message) {
 			if (!voice){
 				return message.channel.send('You need to be in the Music Channel to play music!');
 			}
-			if (!voice.name.toLowerCase().includes("music")) {
+			/* if (!voice.name.toLowerCase().includes("music")) {
 				console.log(`Sending ${message.author.username} to the music channel...`)
 				var vChat = w.find((value)=>value.type == 'voice')
 				message.member.setVoiceChannel(vChat)
 				voice = vChat
-			}
+			} */
 			const perms = voice.permissionsFor(message.client.user)
 			if (!perms.has('CONNECT') || !perms.has('SPEAK')) {
 				return message.channel.send("I need to be able to connect and speak in the Music Channel for that!")
@@ -458,7 +460,7 @@ bot.on("message", async function (message) {
 			musicList.enqueue(args.slice(1).join(' '))
 			var nextToPlay = musicList.dequeue() || "music"
 			var file = require('./Requests/Jukebox.json')
-			var videos = null
+			var videos = {title: "placeholder", url: "placeholder"}
 			var closest = jukebox.get(nextToPlay)
 			console.log(jukebox.get(nextToPlay))
 			console.log(jukebox.values())
@@ -490,19 +492,16 @@ bot.on("message", async function (message) {
 			 * @param {Discord.TextChannel} sendChannel the original channel request was given on
 			 * @param {Discord.TextChannel} errChannel the channel to send errors to
 			 */
-			var play_video = async function(channel, vids, sendChannel, errChannel) {
-				console.log(`Joinable?: ${channel.joinable}`)
+			var play_video = function(channel, vids, sendChannel, errChannel) {
 				channel.join().then(connection=>{
-					const stream = ytdl(vids.url, { filter : 'audioonly' })
-					var dispatcher = connection.playStream(stream)
-					console.log(`Currently speaking? : ${connection.speaking}`)
-					console.log(`playing music for ${vids.title}`)
-					console.log(vids)
+					const stream = ytdl(vids.url, {begin: '0ms, 0s, 0m, 0h'})
+					const dispatcher = connection.playStream(stream)
+					console.log(`Currently playing ${vids.title} with a link of ${vids.url}`)
 					currentlyPlaying = true
 					last_Play = vids.title
 
 					dispatcher.on('end', ()=>{
-						console.log('Song ended!')
+						console.log(`Song done! Played for ${dispatcher.totalStreamTime}ms`)
 						currentlyPlaying = false
 						sendChannel.send(`Did you like it? Here it is: ${vids.url}`)
 						console.log(musicList.isEmpty())
@@ -512,9 +511,9 @@ bot.on("message", async function (message) {
 							var next_video = null
 							var f = require('./Requests/Jukebox.json')
 							if (match != null) {
-								console.log("got here")
+								console.log(`Got here`)
 								var closest_match = match[0][1]
-								next_video = {title:closest_match, url:file[closest_match]}
+								next_video = { title: closest_match, url: file[closest_match] }
 								console.log(`1. This is the video: ${closest_match}, ${next_video.url}`)
 								play_video(channel, next_video, sendChannel, errChannel)
 							}else{
@@ -527,18 +526,15 @@ bot.on("message", async function (message) {
 										console.log(`2. This is the video: ${next_video.title}, ${next_video.url}`)
 										play_video(channel, next_video, sendChannel, errChannel)
 									})
-								}catch(e){
+								}catch(e) {
 									console.log(e)
 									return message.channel.send("Oh no! I can't search for new songs right now :(")
 								}
 							}
 						}
-						connection.disconnect()
 						console.log(`Successfully disconnected from the channel`)
+						channel.leave()
 					})
-				}).catch(reason=>{
-					console.log(reason)
-					return errChannel.send("An error has occurred")
 				})
 			}
 			play_video(voice, videos, played, message.channel)
