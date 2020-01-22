@@ -24,6 +24,7 @@ const fs = require('fs'); //file creating method
 var bot = new Discord.Client();
 var repeater = "https://www.youtube.com/watch?v=Lkcvrxj0eLY"; // classical music
 const commandsOnlyChannels = ['music-requests']
+var loaded_playlist = false
 
 // This is the list of music requests that the bot has received
 var musicList = new Queue()
@@ -456,7 +457,11 @@ bot.on("message", async function (message) {
 			if (!perms.has('CONNECT') || !perms.has('SPEAK')) {
 				return message.channel.send("I need to be able to connect and speak in the voice channel for that!")
 			}
-			musicList.enqueue(args.slice(1).join(' '))
+			if (loaded_playlist && args.slice(1).join(' ') == '') {
+				// do not enqueue
+			}else{
+				musicList.enqueue(args.slice(1).join(' '))
+			}
 			if (currentlyPlaying) {
 				return message.channel.send(`There is currently a music begin played. Your request is currently **number ${musicList.size()}** on the waiting list`)
 			}
@@ -470,7 +475,7 @@ bot.on("message", async function (message) {
 			var closest = jukebox.get(nextToPlay)
 			console.log(jukebox.get(nextToPlay))
 			console.log(jukebox.values())
-			if (closest != null) {
+			if (closest != null && closest[0][0] > 0.65) {
 				var closest_name = closest[0][1]
 				videos = {
 					title : closest_name,
@@ -514,6 +519,7 @@ bot.on("message", async function (message) {
 						console.log(musicList.isEmpty())
 						console.log(musicList)
 						if (musicList.isEmpty()) {
+							loaded_playlist = false
 							channel.leave()
 							return
 						}
@@ -522,10 +528,11 @@ bot.on("message", async function (message) {
 							var match = jukebox.get(next)
 							var next_video = null
 							var f = require('./Requests/Jukebox.json')
-							if (match != null) {
+							if (match != null && match[0][0] > 0.65) {
 								console.log(`Got here`)
 								var closest_match = match[0][1]
 								next_video = { title: closest_match, url: f[closest_match] }
+								console.log(match)
 								console.log(`1. This is the video: ${closest_match}, ${next_video.url}`)
 								play_video(channel, next_video, sendChannel, errChannel)
 							}else{
@@ -540,7 +547,7 @@ bot.on("message", async function (message) {
 									})
 								}catch(e) {
 									console.log(e)
-									return message.channel.send("Oh no! I can't search for new songs right now :(")
+									return errChannel.send("Oh no! I can't search for new songs right now :(")
 								}
 							}
 						}
@@ -673,6 +680,7 @@ bot.on("message", async function (message) {
 				names += `${i + 1}) **${file[play_name][i]}**\n`
 			}
 			message.channel.send(`Congrats! You have queued a total of **${file[play_name].length}** songs!`)
+			loaded_playlist = true
 			return message.channel.send(names)
 		break;
 
