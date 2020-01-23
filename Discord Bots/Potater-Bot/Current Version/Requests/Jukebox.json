@@ -1,49 +1,170 @@
 {
-	"223": "https://www.youtube.com/watch?v=UZyVD0HfNn0",
-	"Mark Ronson, Camila Cabello - Find U Again": "https://www.youtube.com/watch?v=xudMZ6d75hc",
-	"i like me better": "https://www.youtube.com/watch?v=a7fzkqLozwA",
-	"lights down low": "https://www.youtube.com/watch?v=5-xVwxqjNyI",
-	"24KGoldn - Valentino": "https://www.youtube.com/watch?v=sttb4UZ-mo8",
-	"paris chainsmokers": "https://www.youtube.com/watch?v=RhU9MZ98jxo",
-	"novocaine fall out boy": "https://www.youtube.com/watch?v=hjtNPyVwMps",
-	"mad world": "https://www.youtube.com/watch?v=Oa-ae6_okmg",
-	"lalala": "https://www.youtube.com/watch?v=EWdIElQUI_4",
-	"killer queen": "https://www.youtube.com/watch?v=aSQwI3rDETk",
-	"cradles": "https://www.youtube.com/watch?v=W33ypY3Q2Lo",
-	"music": "https://www.youtube.com/watch?v=4gpqv-4iDm4",
-	"circles post malone": "https://www.youtube.com/watch?v=0sca9FP6zl8",
-	"right back Khalid": "https://www.youtube.com/watch?v=9z3HYlpJ87w",
-	"lust lil skies": "https://www.youtube.com/watch?v=94K3alVK7Gs",
-	"beautiful people": "https://www.youtube.com/watch?v=R9oYAk5Vfqw",
-	"topanga trippie redd": "https://www.youtube.com/watch?v=xuk1IZPzNdI",
-	"bye bye bye": "https://www.youtube.com/watch?v=VGexpzNQR-0",
-	"call me nav": "https://www.youtube.com/watch?v=52tHw5TgE10",
-	"sucker": "https://www.youtube.com/watch?v=yG60iRJwmfA",
-	"kim possible theme": "https://www.youtube.com/watch?v=J29qegNslLk",
-	"magnolia playboy carti": "https://www.youtube.com/watch?v=DhAdOLkgyAY",
-	"the box roddy rich": "https://www.youtube.com/watch?v=KtVdL2CPc8o",
-	"the London young thug": "https://www.youtube.com/watch?v=Uv6tRbZ0wlk",
-	"cool jonas brothers": "https://www.youtube.com/watch?v=Kbcida1PxhI",
-	"flatbed freestyle": "https://www.youtube.com/watch?v=uuyBqCvQ5lk",
-	"peta": "https://www.youtube.com/watch?v=LpJn18wHZdo",
-	"Make it Right": "https://www.youtube.com/watch?v=hiLK3eTda-0",
-	"vibez": "https://www.youtube.com/watch?v=n055gLbsMxc",
-	"gyalchester": "https://www.youtube.com/watch?v=CeAhTu4r0hM",
-	"Hollywoods Bleeding": "https://www.youtube.com/watch?v=szyKv63JB3s",
-	"do not disturb drake": "https://www.youtube.com/watch?v=zhY_0DoQCQs",
-	"high fashion": "https://www.youtube.com/watch?v=iP89KD1EPc8",
-	"love$ick": "https://www.youtube.com/watch?v=dmd8ZTir5Pw",
-	"amigo lil tecca": "https://www.youtube.com/watch?v=KcrA6IDCqRE",
-	"ransom": "https://www.youtube.com/watch?v=0Cshm-BsiaU",
-	"slim shady": "https://www.youtube.com/watch?v=l7KEuKKuuas",
-	"maze": "https://www.youtube.com/watch?v=XElHxSgrP2g",
-	"sad xxtentation": "https://www.youtube.com/watch?v=ACCKkg9sH5M",
-	"break my stride": "https://www.youtube.com/watch?v=uv7iXqVclbk",
-	"big time rush": "https://www.youtube.com/watch?v=zkm1vvaOz1E",
-	"one dance": "https://www.youtube.com/watch?v=2Hr8Ae6yc9A",
-	"Loud R5": "https://www.youtube.com/watch?v=oBiftjfg9zo",
-	"memories": "https://www.youtube.com/watch?v=o2DXt11SMNI",
-	"Boy With Lauv": "https://www.youtube.com/watch?v=p-4_cv_LPPs",
-	"young dumb and broke": "https://www.youtube.com/watch?v=KgjG53gnfFc",
-	"adore you": "https://www.youtube.com/watch?v=Vs_lVOPZMAM"
+	"Classical": {
+		"url": "https://www.youtube.com/watch?v=Lkcvrxj0eLY",
+		"duration": "2:42"
+	},
+	"dance monkey": {
+		"url": "https://www.youtube.com/watch?v=mn-zONyBAe8",
+		"duration": "3:35"
+	},
+	"killer queen": {
+		"url": "https://www.youtube.com/watch?v=aSQwI3rDETk",
+		"duration": "3:03"
+	},
+	"don't stop me now": {
+		"url": "https://www.youtube.com/watch?v=KKny_ia8Fvo",
+		"duration": "3:32"
+	},
+	"valentino": {
+		"url": "https://www.youtube.com/watch?v=sttb4UZ-mo8",
+		"duration": "3:00"
+	},
+	"worldwide big time rush": {
+		"url": "https://www.youtube.com/watch?v=zkm1vvaOz1E",
+		"duration": "3:48"
+	},
+	"223": {
+		"url": "https://www.youtube.com/watch?v=UZyVD0HfNn0",
+		"duration": "2:53"
+	},
+	"find u again": {
+		"url": "https://www.youtube.com/watch?v=xudMZ6d75hc",
+		"duration": "3:17"
+	},
+	"i like me better": {
+		"url": "https://www.youtube.com/watch?v=a7fzkqLozwA",
+		"duration": "3:17"
+	},
+	"lights down low": {
+		"url": "https://www.youtube.com/watch?v=5-xVwxqjNyI",
+		"duration": "3:51"
+	},
+	"paris chainsmokers": {
+		"url": "https://www.youtube.com/watch?v=RhU9MZ98jxo",
+		"duration": "3:48"
+	},
+	"novocaine fall out boy": {
+		"url": "https://www.youtube.com/watch?v=hjtNPyVwMps",
+		"duration": "3:47"
+	},
+	"mad world": {
+		"url": "https://www.youtube.com/watch?v=Oa-ae6_okmg",
+		"duration": "3:02"
+	},
+	"lalala": {
+		"url": "https://www.youtube.com/watch?v=EWdIElQUI_4",
+		"duration": "2:45"
+	},
+	"cradles": {
+		"url": "https://www.youtube.com/watch?v=W33ypY3Q2Lo",
+		"duration": "3:30"
+	},
+	"circles post malone": {
+		"url": "https://www.youtube.com/watch?v=0sca9FP6zl8",
+		"duration": "3:35"
+	},
+	"right back khalid": {
+		"url": "https://www.youtube.com/watch?v=9z3HYlpJ87w",
+		"duration": "4:13"
+	},
+	"lust lil skies": {
+		"url": "https://www.youtube.com/watch?v=94K3alVK7Gs",
+		"duration": "2:36"
+	},
+	"beautiful people": {
+		"url": "https://www.youtube.com/watch?v=R9oYAk5Vfqw",
+		"duration": "3:29"
+	},
+	"topanga trippie redd": {
+		"url": "https://www.youtube.com/watch?v=xuk1IZPzNdI",
+		"duration": "3:03"
+	},
+	"bye bye bye": {
+		"url": "https://www.youtube.com/watch?v=VGexpzNQR-0",
+		"duration": "3:20"
+	},
+	"call me nav": {
+		"url": "https://www.youtube.com/watch?v=52tHw5TgE10",
+		"duration": "3:26"
+	},
+	"sucker": {
+		"url": "https://www.youtube.com/watch?v=yG60iRJwmfA",
+		"duration": "3:01"
+	},
+	"kim possible theme": {
+		"url": "https://www.youtube.com/watch?v=J29qegNslLk",
+		"duration": "2:37"
+	},
+	"magnolia playboi carti": {
+		"url": "https://www.youtube.com/watch?v=DhAdOLkgyAY",
+		"duration": "3:01"
+	},
+	"the box roddy rich": {
+		"url": "https://www.youtube.com/watch?v=KtVdL2CPc8o",
+		"duration": "3:17"
+	},
+	"the london young thug": {
+		"url": "https://www.youtube.com/watch?v=Uv6tRbZ0wlk",
+		"duration": "3:20"
+	},
+	"cool jonas brothers": {
+		"url": "https://www.youtube.com/watch?v=Kbcida1PxhI",
+		"duration": "2:47"
+	},
+	"flatbed freestyle": {
+		"url": "https://www.youtube.com/watch?v=uuyBqCvQ5lk",
+		"duration": "4:00"
+	},
+	"peta": {
+		"url": "https://www.youtube.com/watch?v=LpJn18wHZdo",
+		"duration": "3:19"
+	},
+	"make it right": {
+		"url": "https://www.youtube.com/watch?v=hiLK3eTda-0",
+		"duration": "4:20"
+	},
+	"vibez": {
+		"url": "https://www.youtube.com/watch?v=n055gLbsMxc",
+		"duration":"2:24"
+	},
+	"gyalchester": {
+		"url": "https://www.youtube.com/watch?v=CeAhTu4r0hM",
+		"duration": "3:09"
+	},
+	"Hollywoods Bleeding": {
+		"url": "https://www.youtube.com/watch?v=szyKv63JB3s",
+		"duration": "2:36"
+	},
+	"do not disturb drake": {
+		"url": "https://www.youtube.com/watch?v=zhY_0DoQCQs",
+		"duration": "4:43"
+	},
+	"high fashion": {
+		"url": "https://www.youtube.com/watch?v=iP89KD1EPc8",
+		"duration": "3:40"
+	},
+	"love$ick": {
+		"url": "https://www.youtube.com/watch?v=dmd8ZTir5Pw",
+		"duration": "3:08"
+	},
+	"amigo lil tecca": {
+		"url": "https://www.youtube.com/watch?v=KcrA6IDCqRE",
+		"duration": "2:30"
+	},
+	"ransom": {
+		"url": "https://www.youtube.com/watch?v=0Cshm-BsiaU",
+		"duration": "2:39"
+	},
+	"slim shady": {
+		"url": "https://www.youtube.com/watch?v=l7KEuKKuuas",
+		"duration": "4:44"
+	},
+	"maze": {
+		"url": "https://www.youtube.com/watch?v=XElHxSgrP2g",
+		"duration": "2:24"
+	},
+	"sad xxxtentacion": {
+		"url": "https://www.youtube.com/watch?v=ACCKkg9sH5M",
+		"duration": "2:46"
+	}
 }

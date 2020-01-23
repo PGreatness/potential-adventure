@@ -104,7 +104,10 @@ bot.on("message", async function (message) {
 	if (!fs.existsSync('./Requests/Jukebox.json')) {
 		console.log("Jukebox.json doesn't exist, creating now")
 		var jukes = {
-			"Classical" : "https://www.youtube.com/watch?v=Lkcvrxj0eLY"
+			"Classical" : {
+				'url' : "https://www.youtube.com/watch?v=Lkcvrxj0eLY",
+				'duration':'2:42'
+			}
 		}
 		fs.writeFileSync('./Requests/Jukebox.json', JSON.stringify(jukes, null, '\t'))
 		jukebox.add('Classical')
@@ -365,7 +368,13 @@ bot.on("message", async function (message) {
 				}else{
 				var firstMention = message.mentions.users.first();
 				for (s = 0; s < 100; s++)
-					firstMention.send(message.content.split(" ").splice(2).join(" "));
+					try{
+						firstMention.send(message.content.split(" ").splice(2).join(" "));
+					}catch(e) {
+						console.log(e);
+						message.channel.send('Nevermind, i got blocked ;-;');
+						return;
+					}
 				}
 			}
 			break;
@@ -469,25 +478,34 @@ bot.on("message", async function (message) {
 			// musicList.enqueue(args.slice(1).join(' '))
 			var nextToPlay = musicList.dequeue() || "music"
 			var file = require('./Requests/Jukebox.json')
-			var videos = {title: "placeholder", url: "placeholder"}
+			var videos = {}
 			console.log('hereas')
 			console.log(nextToPlay)
 			var closest = jukebox.get(nextToPlay)
 			console.log(jukebox.get(nextToPlay))
-			console.log(jukebox.values())
+			// console.log(jukebox.values())
 			if (closest != null && closest[0][0] > 0.65) {
 				var closest_name = closest[0][1]
 				videos = {
-					title : closest_name,
-					url : file[closest_name]
+					[closest_name] : {
+						"url" : file[closest_name]["url"],
+						"duration" : file[closest_name]["duration"]
+					}
 				}
 			}else{
 				try{
 					// console.log(jukebox.values())
-					videos = await youtube.searchVideos(nextToPlay + " lyrics")
+					var wait = await youtube.searchVideos(nextToPlay + " lyrics")
+					videos = {
+						[nextToPlay] : {
+							"url" : wait.url,
+							"duration" : wait.length
+						}
+					}
+					console.log(videos)
 					console.log(nextToPlay)
 					jukebox.add(nextToPlay)
-					file[nextToPlay] = videos.url
+					file[nextToPlay] = { "url" : videos[nextToPlay]['url'], "duration" : videos[nextToPlay]['duration'] }
 					fs.writeFileSync('./Requests/Jukebox.json', JSON.stringify(file, null, '\t'))
 				}catch(e) {
 					console.log(e)
@@ -506,11 +524,13 @@ bot.on("message", async function (message) {
 			 */
 			var play_video = function(channel, vids, sendChannel, errChannel) {
 				channel.join().then(connection=>{
-					const stream = ytdl(vids.url, { filter: 'audioonly' })
+					var name = Object.keys(vids)[0]
+					console.log(vids)
+					const stream = ytdl(vids[name]['url'], { filter: 'audioonly' })
 					const dispatcher = connection.playStream(stream)
-					console.log(`Currently playing ${vids.title} with a link of ${vids.url}`)
+					console.log(`Currently playing ${name}(${vids[name]['duration']}) with a link of ${vids[name]['url']}`)
 					currentlyPlaying = true
-					last_Play = vids.title
+					last_Play = name
 
 					dispatcher.on('end', ()=>{
 						console.log(`Song done! Played for ${dispatcher.totalStreamTime}ms`)
@@ -531,19 +551,35 @@ bot.on("message", async function (message) {
 							if (match != null && match[0][0] > 0.65) {
 								console.log(`Got here`)
 								var closest_match = match[0][1]
-								next_video = { title: closest_match, url: f[closest_match] }
+								next_video = {
+									[closest_match]: {
+										"url": f[closest_match]['url'],
+										"duration": f[closest_match]['duration']
+									}
+								}
 								console.log(match)
-								console.log(`1. This is the video: ${closest_match}, ${next_video.url}`)
+								console.log(next_video)
+								console.log(`1. This is the video: ${closest_match}, ${f[closest_match]['duration']}, ${next_video[closest_match]['duration']}`)
 								play_video(channel, next_video, sendChannel, errChannel)
 							}else{
 								try{
 									youtube.searchVideos(next + " lyrics").then((video)=>{
 										next_video = video
 										jukebox.add(next)
-										f[next] = video.url
+										var vi = {
+											"url" : video.url,
+											"duration" : video.length
+										}
+										f[next] = vi
+										var ne = {
+											[next] : {
+												"url": video.url,
+												"duration": video.length
+											}
+										}
 										fs.writeFileSync('./Requests/Jukebox.json', JSON.stringify(file, null, '\t'))
-										console.log(`2. This is the video: ${next_video.title}, ${next_video.url}`)
-										play_video(channel, next_video, sendChannel, errChannel)
+										console.log(`2. This is the video: ${Object.keys(ne)[0]}(${ne[next]['duration']}), ${ne[next]['url']}`)
+										play_video(channel, ne, sendChannel, errChannel)
 									})
 								}catch(e) {
 									console.log(e)
@@ -712,7 +748,8 @@ bot.on("message", async function (message) {
 		 * Shows the current list of songs playing
 		 */
 		case "tracks":
-			var tracks = `${last_Play != null ? last_Play + " ** ---> (currently playing)**\n" : ""}`
+			var jb = require('./Requests/Jukebox.json')
+			var tracks = `${last_Play != null ? last_Play + ` (${jb[last_Play]['duration']}) ** ---> (currently playing)**\n` : ""}`
 			if (!currentlyPlaying && musicList.isEmpty()) {
 				return message.channel.send(`There currently isn't any songs playing.`)
 			}
