@@ -535,7 +535,7 @@ bot.on("message", async function (message) {
 					dispatcher.on('end', ()=>{
 						console.log(`Song done! Played for ${dispatcher.totalStreamTime}ms`)
 						currentlyPlaying = false
-						sendChannel.send(`Did you like it? Here it is: ${vids.url}`)
+						sendChannel.send(`Did you like it? Here it is: ${vids[name]['url']}`)
 						console.log(musicList.isEmpty())
 						console.log(musicList)
 						if (musicList.isEmpty()) {
