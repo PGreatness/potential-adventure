@@ -617,6 +617,26 @@ bot.on("message", async function (message) {
 					return message.channel.send("There currently isn't any music playing!")
 				}
 				break;
+			/**
+			 * Command: DC
+			 * @param: None
+			 * Disconnects the bot from the voice channel. Returns a message whether successful or not
+			 */
+			case "dc":
+				var voice = message.member.voiceChannel
+				if (voice == null) {
+					return message.channel.send("Please enter the channel to ask me to leave!")
+				}
+				for(var i = 0; i < voice.members.array().length; i++) {
+					if (bot.user.username == voice.members.array()[i].user.username) {
+						loaded_playlist = false
+						musicList.clear()
+						voice.connection.disconnect()
+						return message.channel.send("Goodbye!")
+					}
+				}
+				return message.channel.send('You must be in the same voice channel to ask me to leave!')
+				break;
 			/** WIP
 			 * Command: PAUSE
 			 * @param: None
