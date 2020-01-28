@@ -25,6 +25,8 @@ var bot = new Discord.Client();
 var repeater = "https://www.youtube.com/watch?v=Lkcvrxj0eLY"; // classical music
 const commandsOnlyChannels = ['music-requests']
 var loaded_playlist = false
+var repeat_curr_song = false
+var repeat_queue = false
 
 // This is the list of music requests that the bot has received
 var musicList = new Queue()
@@ -535,6 +537,9 @@ bot.on("message", async function (message) {
 					dispatcher.on('end', ()=>{
 						console.log(`Song done! Played for ${dispatcher.totalStreamTime}ms`)
 						currentlyPlaying = false
+						if (repeat_curr_song) {
+							return play_video(channel, vids, sendChannel, errChannel)
+						}
 						sendChannel.send(`Did you like it? Here it is: ${vids[name]['url']}`)
 						console.log(musicList.isEmpty())
 						console.log(musicList)
@@ -542,6 +547,10 @@ bot.on("message", async function (message) {
 							loaded_playlist = false
 							channel.leave()
 							return
+						}
+						if (repeat_queue && !musicList.isEmpty()) {
+							console.log("queueing")
+							musicList.enqueue(name)
 						}
 						if (!musicList.isEmpty()) {
 							var next = musicList.dequeue() || "music"
@@ -740,6 +749,40 @@ bot.on("message", async function (message) {
 			return message.channel.send(names)
 		break;
 
+		/**
+		 * Command: LOOP
+		 * @param: None
+		 * Loops the current song in the queue
+		 */
+		case "loop":
+			if (!currentlyPlaying) {
+				return message.channel.send("There currently isn't any songs to repeat!")
+			}
+			repeat_curr_song = !repeat_curr_song
+			console.log(`Looping?: ${repeat_curr_song}`)
+			return message.channel.send(repeat_curr_song ? "Looping current song!":"Looping turned off")
+		break;
+
+		/**
+		 * Command: LOOPALL
+		 * @param: None
+		 * Loops the entire queue
+		 */
+		case "loopall":
+			if (!currentlyPlaying) {
+				return message.channel.send("There currently isn't any songs to repeat!")
+			}
+			repeat_curr_song = false
+			repeat_queue = !repeat_queue
+			console.log(`Looping queue?: ${repeat_queue}`)
+			return message.channel.send(repeat_queue ? "Looping entire queue!" : "Queue no longer looped!")
+		break;
+
+		/**
+		 * Command: LISTS
+		 * @param: None
+		 * Displays the playlists that the User has saved
+		 */
 		case "lists":
 			if (!fs.existsSync('./Playlists')) {
 				console.log(`Playlist folder doesn't exist, creating now`)
@@ -769,7 +812,7 @@ bot.on("message", async function (message) {
 		 */
 		case "tracks":
 			var jb = require('./Requests/Jukebox.json')
-			var tracks = `${last_Play != null ? last_Play + ` (${jb[last_Play]['duration']}) ** ---> (currently playing)**\n` : ""}`
+			var tracks = `${last_Play != null ? last_Play + ` (${jb[last_Play]['duration']}) ** ---> (currently playing)**${repeat_curr_song ? "_ Looping_": ""}\n` : ""}`
 			if (!currentlyPlaying && musicList.isEmpty()) {
 				return message.channel.send(`There currently isn't any songs playing.`)
 			}
@@ -782,7 +825,8 @@ bot.on("message", async function (message) {
 					tracks += `${song}\n`
 				}
 			}
-			return message.channel.send(`These are in the song queue:\n${tracks}${currentlyPlaying ? "" : `\nMusic has not started yet, tell me to play when you are ready`}`)
+			console.log("got to here in tracks")
+			return message.channel.send(`These are in the song queue:\n${repeat_queue ? "_Looping queue_\n":""}${tracks}${currentlyPlaying ? "" : `\nMusic has not started yet, tell me to play when you are ready`}`)
 		break;
 
 		/**
