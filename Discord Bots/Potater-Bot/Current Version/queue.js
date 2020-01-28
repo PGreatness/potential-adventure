@@ -48,7 +48,7 @@ class Queue {
 
     copy() {
         var ret = new Queue()
-        for (i = 0; i < this.items.length; i++) {
+        for (let i = 0; i < this.items.length; i++) {
             ret.enqueue(this.items[i])
         }
         return ret
