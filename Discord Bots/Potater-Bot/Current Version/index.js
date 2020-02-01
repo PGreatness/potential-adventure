@@ -21,6 +21,7 @@ const TOKEN = botSettings.TOKEN; //login token, REQUIRED
 var YOUTUBE_API_KEY = botSettings.YT_API_KEY // The API Key for YouTube
 const PREFIX = "!"; //command trigger
 const fs = require('fs'); //file creating method
+const path = require('path')
 var bot = new Discord.Client();
 var repeater = "https://www.youtube.com/watch?v=Lkcvrxj0eLY"; // classical music
 const commandsOnlyChannels = ['music-requests']
@@ -62,6 +63,33 @@ bot.on("guildMemberAdd", function (member) {
 	member.addRole(member.guild.roles.find("name", "French Fries"));
 
 });
+
+let today = new Date()
+if (botSettings['lastUpdate']['month'] - today.getMonth() != 0) {
+	botSettings['lastUpdate'] = {
+		'month': today.getMonth(),
+		'day': today.getDate(),
+		'year': today.getFullYear()
+	}
+	fs.writeFileSync('./bot-settings.json', JSON.stringify(botSettings, null, '\t'))
+	console.log(`Monthly cleaning of Reports folder commencing...`)
+	fs.exists('./Reports', (exists)=>{
+		if (exists) {
+			fs.readdir('./Reports', (err, files)=>{
+				if (err) {
+					console.log(err)
+				}
+				for (const file of files) {
+					fs.unlink(path.join(__dirname + `/Reports`, file), err =>{
+						if (err) console.log(err)
+					})
+				}
+				console.log(`Monthly cleaning complete!`)
+			})
+		}
+	})
+	// botSettings['lastUpdate'] = today.toJSON()
+}
 
 bot.on("message", async function (message) {
 	//Do nothing if message is sent by a bot
@@ -417,7 +445,11 @@ bot.on("message", async function (message) {
 				.addField("Reason:", `${reason}`);
 			message.channel.send(kickEmbed);
 			message.channel.send("Done!");
-			message.mentions.users.first().send(kickEmbed);
+			try{
+				message.mentions.users.first().send(kickEmbed);
+			}catch(e) {
+				console.log("Couldn't send message to user")
+			}
 			break;
 		// MUSIC COMMANDS
 		// ------------------ V ---------------
@@ -530,6 +562,7 @@ bot.on("message", async function (message) {
 					console.log(vids)
 					const stream = ytdl(vids[name]['url'], { filter: 'audioonly' })
 					const dispatcher = connection.playStream(stream)
+					dispatcher.setVolumeLogarithmic(0.25)
 					console.log(`Currently playing ${name}(${vids[name]['duration']}) with a link of ${vids[name]['url']}`)
 					currentlyPlaying = true
 					last_Play = name
@@ -826,7 +859,7 @@ bot.on("message", async function (message) {
 				}
 			}
 			console.log("got to here in tracks")
-			return message.channel.send(`These are in the song queue:\n${repeat_queue ? "_Looping queue_\n":""}${tracks}${currentlyPlaying ? "" : `\nMusic has not started yet, tell me to play when you are ready`}`)
+			return message.channel.send(`These are in the song queue:\n${repeat_queue ? "_Looping queue_\n":""}${tracks}${currentlyPlaying ? "\nThere are a total of **" + musicList.size() + " songs** in queue" : `\nMusic has not started yet, tell me to play when you are ready`}`)
 		break;
 
 		/**
@@ -930,7 +963,11 @@ bot.on("message", async function (message) {
 				.addField("Days:", days);
 			message.channel.send(banEmbed);
 			message.channel.send("Done!");
-			message.mentions.users.first().send(banEmbed);
+			try{
+				message.mentions.users.first().send(banEmbed);
+			}catch(e) {
+				console.log("Couldn't send message to user")
+			}
 			break;
 		/**
 		 * Command: BNBR
@@ -1002,6 +1039,8 @@ bot.on("message", async function (message) {
 					var file = require(fileName);
 					file.report.push(message.content.split(" ").splice(2).join(" "));
 					file.reportCount = file.reportCount + 1;
+					file.timeOuts = counts == 3 ? file.timeOuts + 1 : file.timeOuts
+					file.bans = counts == 8 ? file.bans + 1 : file.bans
 					counts = file.reportCount;
 					fs.writeFile(fileName, JSON.stringify(file, null, 2), function(err) {
 						if (err) {
@@ -1014,7 +1053,9 @@ bot.on("message", async function (message) {
 				}else{
 					json = {
 						report : [message.content.split(" ").splice(2).join(" ")],
-						reportCount : 1
+						reportCount : 1,
+						timeOuts : 0,
+						bans : 0
 					}
 					json = JSON.stringify(json, null, 2);
 					fs.writeFile(fileName, json, (err) => {
@@ -1032,7 +1073,35 @@ bot.on("message", async function (message) {
 						mods.push(member.user.username)
 					}
 				}
-				message.mentions.users.first().send(`A report has been filed against you for breaching the BNBR Policy of **${message.guild.name}**. This is report number **${counts}**. If you believe that this is a mistake, please contact **${String(mods)}**\n\nReport: **${args.splice(2).join(' ')}**`)
+				try{
+					message.mentions.users.first().send(`A report has been filed against you for breaching the BNBR Policy of **${message.guild.name}**. This is report number **${counts}**. If you believe that this is a mistake, please contact **${String(mods)}**\n\nReport: **${args.splice(2).join(' ')}**`)
+				}catch(e) {
+					console.log("Couldn't send message to user")
+				}
+				var reported = message.mentions.users.first()
+				if (counts == 3) {
+					var all_roles = message.guild.roles.array()
+					if (!all_roles.includes('time out')) {
+						message.guild.createRole({name:'time out', color:'DARK_GREY', hoist:true, permissions:[]}, 'time out')
+					}
+					message.guild.member(reported).setRoles(['time out']).then(()=>{
+						return message.channel.send(`User ${reported} has been set on a time out for now.`)
+					})
+				}
+				if (count == 5) {
+					message.guild.member(reported).kick(message.content.split(" ").splice(2).join(" ")).then(()=>{
+						message.channel.send(`Thank you for reporting ${reported.username}. Due to their obsessive breaching of the BNBR Policy, they have been kicked from the server.`)
+						return reported.send(`You have been kicked from the server for excessive breaches. You may join back but be warned.`)
+					})
+				}
+				if (count == 8) {
+					let reasoning = `You have been reported 8 times for breaching the BNBR Policy and have been banned from the server. Please take this time to realize what went wrong with your life to be banned by a happy potato.`
+					message.guild.member(reported).ban({days:3,reason:message.content.split(" ").splice(2).join(" ")}).then(()=>{
+						message.channel.send(`Thank you for reporting this user. Proper actions have been taken`)
+						return reported.send(reasoning)
+					})
+
+				}
 				return message.channel.send("Thank you, report submitted");
 			});
 			break;

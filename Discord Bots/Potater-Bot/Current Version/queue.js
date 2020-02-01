@@ -34,7 +34,7 @@ class Queue {
     }
 
     findPlace(elem) {
-        for (i =0; i < this.items.length; i++) {
+        for (let i =0; i < this.items.length; i++) {
             if (this.items[i] == elem) {
                 return i
             }
@@ -56,7 +56,7 @@ class Queue {
 
     uniqueCopy() {
         var tmp = []
-        for (i = 0; i < this.items.length; i++) {
+        for (let i = 0; i < this.items.length; i++) {
             if (!tmp.includes(this.items[i])) {
                 tmp.push(this.items[i])
             }
