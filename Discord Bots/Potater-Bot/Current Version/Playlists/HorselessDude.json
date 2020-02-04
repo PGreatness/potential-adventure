@@ -4,12 +4,6 @@
 		"lights down low",
 		"24KGoldn - Valentino (Lyrics)"
 	],
-	"default": [
-		"223",
-		"another",
-		"lights down low",
-		"24KGoldn - Valentino (Lyrics)"
-	],
 	"songs": [
 		"middle child j Cole",
 		"I feel it coming the weekend",
@@ -25,5 +19,12 @@
 		"fuck love xxtentacion",
 		"call me nav",
 		"tunnel vision"
+	],
+	"onerepublic": [
+		"secrets onerepublic",
+		"all the right moves",
+		"wanted onerepublic",
+		"counting stars",
+		"good life onerepublic"
 	]
 }
