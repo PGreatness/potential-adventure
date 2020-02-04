@@ -98,10 +98,10 @@ bot.on("message", async function (message) {
 	//Greet fellow human
 	if (commandsOnlyChannels.includes(message.channel.name) && !message.content.startsWith(PREFIX)) {
 		var old = await message.delete()
-		return message.author.send(`Sorry, but this channel(**${message.channel.name}**) in **${message.member.guild.name}** does not allow chatting! Only commands are accepted there`)
+		return message.author.send(`Sorry, but this channel(**${message.channel.name}**) in **${message.member.guild.name}** does not allow chatting! Only commands are accepted there`).catch(()=>{console.log("Could not send info message")})
 	}
 	if (message.content.toLowerCase() == "hello") {
-		message.channel.send(`Hi there! I'm ${bot.user.username} and you can interact with me using **${PREFIX}**!`);
+		message.channel.send(`Hi there! I'm ${bot.user.username} and you can interact with me using **${PREFIX}**! Use **!help** to see all the commands`).catch(()=>{console.log("Could not send welcome message")});
 	}
 	// Chat Logging System
 	console.log(message.content);
@@ -166,22 +166,41 @@ bot.on("message", async function (message) {
 		*/
 		case "help":
 			var comms = new Discord.RichEmbed()
-				.addField("ping", "Show your ping")
-				.addField("info", "Show info about me :3")
-				.addField("8ball", "Do you seek your future? Check it now!")
-				.addField("embed", "Send a special kind of message!")
-				.addField("senpai", "I will always notice you!!!!<3")
-				.addField("game", "Request people to join you in the game! Mention them to exclude from invite.")
-				.addField("how", "Get detailed instructions on how a certain command works!")
-				.addField('play', "Play some music!")
-				.addField('skip', 'Skip the music')
-				.addField('pause', 'Pause/Resume the music')
-				.addField(`tracks`, `Shows the songs in queue`)
-				.addField('save', 'Saves the current playlist as the user\'s playlist')
-				.addField('load', 'Loads one of the user\'s playlist straight into the queue')
-				.addField(`lists`, "Displays the playlists that the user has saved")
-				.addField('bnbr', "Read the BNBR Policy")
-				.addField("report", "Report users for breaching the BNBR contract");
+			var totalPages = 3 // the number of help pages
+			if ((!isNaN(args[1]) || !isNaN(args[2])) && (args[1] <= 0 || args[2] <= 0) ) {
+				return message.channel.send("I'm sorry, but that number is not valid. Please try again").catch(()=>{message.reply("An error occurred")})
+			}
+			if (args[1] == undefined) {
+				args[1] = '1'
+			}
+				if (args[1] == '1' || args[2] == '1') {
+					comms
+						.addField("ping", "Show your ping")
+						.addField("info", "Show info about me :3")
+						.addField("8ball", "Do you seek your future? Check it now!")
+						.addField("embed", "Send a special kind of message!")
+						.addField("senpai", "I will always notice you!!!!<3")
+						.addField("game", "Request people to join you in the game! Mention them to exclude from invite.")
+						.addField("how", "Get detailed instructions on how a certain command works!")
+				}
+				if (args[1] == '2' || args[2] == '2') {
+					comms
+						.addField('play', "Play some music!")
+						.addField('skip', 'Skip the music')
+						.addField('pause', 'Pause/Resume the music')
+						.addField(`tracks`, `Shows the songs in queue`)
+						.addField('save', 'Saves the current playlist as the user\'s playlist')
+						.addField('load', 'Loads one of the user\'s playlist straight into the queue')
+						.addField(`lists`, "Displays the playlists that the user has saved")
+						.addField('loop', 'Toggles the loop')
+						.addField('loopall', 'Toggle the queue loop')
+						.addField("dc", "Disconnects the bot from the current voice channel")
+				}
+				if (args[1] == '3' || args[2] == '3') {
+					comms
+						.addField('bnbr', "Read the BNBR Policy")
+						.addField("report", "Report users for breaching the BNBR contract");
+				}
 				//Admin commands
 			if (args[1] === "mod") {
 					var mems = message.guild.members
@@ -201,8 +220,11 @@ bot.on("message", async function (message) {
 					comms.setColor('ORANGE')
 					.setThumbnail(bot.user.avatarURL);
 			}
+			comms.footer = {
+				text : `Showing page ${args[1]} of ${totalPages}`
+			}
 			console.log(comms);
-			return message.channel.send("Hello! There are a multitude of commands available:", comms);
+			return message.channel.send("Hello! There are a multitude of commands available:", comms).catch(()=>{message.reply("An error occurred! Oops")});
 			break;
 			/**
 			 * Command: HOW
@@ -215,7 +237,7 @@ bot.on("message", async function (message) {
 			let uEmbed = new Discord.RichEmbed();
 			if (!args[1]) {
 				uEmbed.addField("!how [command]", "Find useful instructions on the usage of certain commands. Exclude trigger (!)");
-				return message.channel.send(uEmbed);
+				return message.channel.send(uEmbed).catch(()=>{message.reply("An error occurred")});
 			}
 				switch (args[1].toLowerCase()) {
 				case "help":
@@ -223,6 +245,15 @@ bot.on("message", async function (message) {
 					break;
 				case "ping":
 					uEmbed.addField(`${PREFIX}ping`, "Receive your ping in ms");
+					break;
+				case "loop":
+					uEmbed.addField(`${PREFIX}loop`, "Toggles the looping on and off. Disconnecting the bot does not turn off the looping")
+					break;
+				case "loopall":
+					uEmbed.addField(`${PREFIX}loopall`, "Toggles the queue looping on and off. Turns off single song loop if on. Disconnecting the bot does not turn off the looping")
+					break;
+				case "dc":
+					uEmbed.addField(`${PREFIX}dc`, "Disconnects the bot from the voice channel")
 					break;
 				case "info":
 					uEmbed.addField(`${PREFIX}info`, "Receive the good stuff about me");
@@ -268,7 +299,7 @@ bot.on("message", async function (message) {
 					uEmbed.addField("This command does not exist", "Try again");
 					break;
 				}
-			message.channel.send(uEmbed);
+			message.channel.send(uEmbed).catch(()=>{message.reply("An error occurred")});
 			break;
 		case "ping":
 		/**
@@ -277,7 +308,7 @@ bot.on("message", async function (message) {
 		 * Returns the ping of the message author.
 		 */
 			var pingOfUser = Date.now() - message.createdTimestamp
-			message.channel.send(`Your ping is: **${pingOfUser}ms**`);
+			message.channel.send(`Your ping is: **${pingOfUser}ms**`).catch(()=>{message.reply("An error occurred")});
 			break;
 		case "info":
 		/**
@@ -285,7 +316,7 @@ bot.on("message", async function (message) {
 		 * @param: none
 		 * Returns information about the bot
 		 */
-			message.channel.send("I'm a handy little robo to help out HorselessDude :3");
+			message.channel.send("I'm a handy little robo to help out HorselessDude :3").catch(()=>{message.reply("An error occurred")});
 			break;
 		case "8ball":
 		/**
@@ -296,12 +327,12 @@ bot.on("message", async function (message) {
 		 */
 			if (args[1]) {//this and the following IF statements can be removed without worry
 				var fort = fortunes[Math.floor(Math.random() * fortunes.length)];
-				message.channel.send(fort);
+				message.channel.send(fort).catch(()=>{message.reply("An error occurred")});
 				if (fort === "BECAUSE I'M BATMAN")
-					message.channel.send(att);
+					message.channel.send(att).catch(()=>{message.reply("An error occurred")});
 				break;
 			} else {
-				message.channel.send("What? What am I supposed to predict?!");
+				message.channel.send("What? What am I supposed to predict?!").catch(()=>{message.reply("An error occurred")});
 				break;
 			}
 		case "embed":
@@ -314,7 +345,7 @@ bot.on("message", async function (message) {
 			var embed = new Discord.RichEmbed()
 				.addField( mss[0] || "Helo, peeps", mss[1] || "Peep")
 				.setThumbnail(message.author.avatarURL);
-			message.channel.send(embed);
+			message.channel.send(embed).catch(()=>{message.reply("An error occurred")});
 			break;
 		case "senpai":
 		/**
@@ -322,7 +353,7 @@ bot.on("message", async function (message) {
 		 * @param: none
 		 * Returns a string with the author of the previous message mentioned
 		 */
-			message.channel.send(message.author.toString() + " always will, baby gurl B~)");
+			message.channel.send(message.author.toString() + " always will, baby gurl B~)").catch(()=>{message.reply("An error occurred")});
 			break;
 		case "game":
 		/**
@@ -340,12 +371,12 @@ bot.on("message", async function (message) {
 			let voicersArr = [];
 			let playingGame;
 			if (message.member.voiceChannel == null) {
-				return message.channel.send("You must be in a voice channel to do this");
+				return message.channel.send("You must be in a voice channel to do this").catch(()=>{message.reply("An error occurred")});
 			}else{
 				voicers = message.member.voiceChannel.members.array();
 			}
 			if (message.member.presence.game == null) {
-				return message.channel.send("You must be playing a game to do this");
+				return message.channel.send("You must be playing a game to do this").catch(()=>{message.reply("An error occurred")});
 			}else{
 				playingGame = message.member.presence.game.name;
 			}
@@ -365,7 +396,7 @@ bot.on("message", async function (message) {
 			let gembed = new Discord.RichEmbed()
 				.addField(`${message.author.username} asked you to play!`, `Playing: ***${playingGame}***` )
 				.addField(`Join now in ${message.member.voiceChannel.name}!`, `${voicersArr}`);
-			return message.channel.send(gembed);
+			return message.channel.send(gembed).catch(()=>{message.reply("An error occurred")});
 		break;
 		case "spam":
 		/**
@@ -378,23 +409,23 @@ bot.on("message", async function (message) {
 		 */
 			var spammer = message.author;
 			if (!args[1]) {
-				return message.channel.send("No one mentioned");
+				return message.channel.send("No one mentioned").catch(()=>{message.reply("An error occurred")});
 			}else{
 				if (message.mentions.members.first().hasPermission("ADMINISTRATOR")) {
-					message.channel.send("You cannot spam admin! Get spammed yo!");
+					message.channel.send("You cannot spam admin! Get spammed yo!").catch(()=>{message.reply("An error occurred")});
 					for (a = 0; a < 100; a++) {
 						try {
 							spammer.send("Get trashed. That person was an admin!");
 							}
 					catch (error) {
 						console.log(e);
-						message.channel.send("Nevermind, i got blocked ;-;");
+						message.channel.send("Nevermind, i got blocked ;-;").catch(()=>{message.reply("An error occurred")});
 						return;
 					}
 				}
 			}
 				if (!message.content.split(" ").splice(2).join(" ")) {
-					return message.channel.send("No message");
+					return message.channel.send("No message").catch(()=>{message.reply("An error occurred")});
 				}else{
 				var firstMention = message.mentions.users.first();
 				for (s = 0; s < 100; s++)
@@ -423,18 +454,18 @@ bot.on("message", async function (message) {
 			let toKick = message.mentions.users.first();
 			if (toKick === bot.user) {
 				console.log(`Kick attempted on bot by ${author}`);
-				return message.channel.send("You can't kick bots!!");
+				return message.channel.send("You can't kick bots!!").catch(()=>{message.reply("An error occurred")});
 			}
 			if (toKick == null)
-				return message.channel.send("Please mention someone. Don't just write their name!");
+				return message.channel.send("Please mention someone. Don't just write their name!").catch(()=>{message.reply("An error occurred")});
 			if (message.mentions.members.first().hasPermission("ADMINISTRATOR"))
-				return message.channel.send("I'm sorry, but that player has admin permissions");
+				return message.channel.send("I'm sorry, but that player has admin permissions").catch(()=>{message.reply("An error occurred")});
 			if (!message.member.hasPermission("KICK_MEMBERS"))
-				return message.channel.send("NIEN! YOU NO HAVE PERMISSIONS!");
+				return message.channel.send("NIEN! YOU NO HAVE PERMISSIONS!").catch(()=>{message.reply("An error occurred")});
 			if (!toKick)
-				return message.channel.send("You didn't say who!");
+				return message.channel.send("You didn't say who!").catch(()=>{message.reply("An error occurred")});
 			if (!reason) {
-				return message.channel.send("You did not specify a reason!");
+				return message.channel.send("You did not specify a reason!").catch(()=>{message.reply("An error occurred")});
 			}
 			message.guild.member(toKick).kick(reason);
 			const kickEmbed = new Discord.RichEmbed()
@@ -443,8 +474,8 @@ bot.on("message", async function (message) {
 				.addField("Kickee:", `${toKick.tag}`)
 				.addField("Moderator: ", `${message.author.tag}`)
 				.addField("Reason:", `${reason}`);
-			message.channel.send(kickEmbed);
-			message.channel.send("Done!");
+			message.channel.send(kickEmbed).catch(()=>{message.reply("An error occurred")});
+			message.channel.send("Done!").catch(()=>{message.reply("An error occurred")});
 			try{
 				message.mentions.users.first().send(kickEmbed);
 			}catch(e) {
@@ -487,7 +518,7 @@ bot.on("message", async function (message) {
 			played = w.find((value)=>value.type == 'text')
 			console.log(args.slice(1).join(' '))
 			if (!voice){
-				return message.channel.send('You need to be in a voice channel to play music!');
+				return message.channel.send('You need to be in a voice channel to play music!').catch(()=>{message.reply("An error occurred")});
 			}
 			// Enable to force uses to be in a certain music channel
 			/* if (!voice.name.toLowerCase().includes("music")) {
@@ -498,7 +529,7 @@ bot.on("message", async function (message) {
 			} */
 			const perms = voice.permissionsFor(message.client.user)
 			if (!perms.has('CONNECT') || !perms.has('SPEAK')) {
-				return message.channel.send("I need to be able to connect and speak in the voice channel for that!")
+				return message.channel.send("I need to be able to connect and speak in the voice channel for that!").catch(()=>{message.reply("An error occurred")})
 			}
 			if (loaded_playlist && args.slice(1).join(' ') == '') {
 				// do not enqueue
@@ -506,7 +537,7 @@ bot.on("message", async function (message) {
 				musicList.enqueue(args.slice(1).join(' '))
 			}
 			if (currentlyPlaying) {
-				return message.channel.send(`There is currently a music begin played. Your request is currently **number ${musicList.size()}** on the waiting list`)
+				return message.channel.send(`There is currently a music begin played. Your request is currently **number ${musicList.size()}** on the waiting list`).catch(()=>{message.reply("An error occurred")})
 			}
 			var youtube = new YouTube(YOUTUBE_API_KEY)
 			// musicList.enqueue(args.slice(1).join(' '))
@@ -543,7 +574,7 @@ bot.on("message", async function (message) {
 					fs.writeFileSync('./Requests/Jukebox.json', JSON.stringify(file, null, '\t'))
 				}catch(e) {
 					console.log(e)
-					return message.channel.send(`Woops! I can't search for music anymore... :(\nTry again tomorrow`)
+					return message.channel.send(`Woops! I can't search for music anymore... :(\nTry again tomorrow`).catch(()=>{message.reply("An error occurred")})
 				}
 			}
 
@@ -573,7 +604,7 @@ bot.on("message", async function (message) {
 						if (repeat_curr_song) {
 							return play_video(channel, vids, sendChannel, errChannel)
 						}
-						sendChannel.send(`Did you like it? Here it is: ${vids[name]['url']}`)
+						sendChannel.send(`Did you like it? Here it is: ${vids[name]['url']}`).catch(()=>{message.reply("An error occurred")})
 						console.log(musicList.isEmpty())
 						console.log(musicList)
 						if (musicList.isEmpty()) {
@@ -625,7 +656,7 @@ bot.on("message", async function (message) {
 									})
 								}catch(e) {
 									console.log(e)
-									return errChannel.send("Oh no! I can't search for new songs right now :(")
+									return errChannel.send("Oh no! I can't search for new songs right now :(").catch(()=>{message.reply("An error occurred")})
 								}
 							}
 						}
@@ -642,21 +673,21 @@ bot.on("message", async function (message) {
 		case "skip":
 				var voice = message.member.voiceChannel
 				if (!voice){
-					return message.channel.send('You need to be in a voice channel to skip music!');
+					return message.channel.send('You need to be in a voice channel to skip music!').catch(()=>{message.reply("An error occurred")})
 				}
 				const permiss = voice.permissionsFor(message.client.user)
 				if (!permiss.has('CONNECT') || !permiss.has('SPEAK')) {
-					return message.channel.send("I need to be able to connect and speak in voice channels for that!")
+					return message.channel.send("I need to be able to connect and speak in voice channels for that!").catch(()=>{message.reply("An error occurred")})
 				}
 				try {
 					if (!currentlyPlaying) {
 						throw new Error('No music playing')
 					}
 					voice.connection.dispatcher.end()
-					return message.channel.send("Music skipped")
+					return message.channel.send("Music skipped").catch(()=>{message.reply("An error occurred")})
 				} catch(e) {
 					console.log(e)
-					return message.channel.send("There currently isn't any music playing!")
+					return message.channel.send("There currently isn't any music playing!").catch(()=>{message.reply("An error occurred")})
 				}
 				break;
 			/**
@@ -667,17 +698,17 @@ bot.on("message", async function (message) {
 			case "dc":
 				var voice = message.member.voiceChannel
 				if (voice == null) {
-					return message.channel.send("Please enter the channel to ask me to leave!")
+					return message.channel.send("Please enter the channel to ask me to leave!").catch(()=>{message.reply("An error occurred")})
 				}
 				for(var i = 0; i < voice.members.array().length; i++) {
 					if (bot.user.username == voice.members.array()[i].user.username) {
 						loaded_playlist = false
 						musicList.clear()
 						voice.connection.disconnect()
-						return message.channel.send("Goodbye!")
+						return message.channel.send("Goodbye!").catch(()=>{message.reply("An error occurred")})
 					}
 				}
-				return message.channel.send('You must be in the same voice channel to ask me to leave!')
+				return message.channel.send('You must be in the same voice channel to ask me to leave!').catch(()=>{message.reply("An error occurred")})
 				break;
 			/** WIP
 			 * Command: PAUSE
@@ -687,24 +718,24 @@ bot.on("message", async function (message) {
 		case "pause":
 			var voice = message.member.voiceChannel
 			if (!voice){
-				return message.channel.send('You need to be in a voice channel to play music!');
+				return message.channel.send('You need to be in a voice channel to play music!').catch(()=>{message.reply("An error occurred")});
 			}
 			const permis = voice.permissionsFor(message.client.user)
 			if (!permis.has('CONNECT') || !permis.has('SPEAK')) {
-				return message.channel.send("I need to be able to connect and speak in voice channels for that!")
+				return message.channel.send("I need to be able to connect and speak in voice channels for that!").catch(()=>{message.reply("An error occurred")})
 			}
 			try {
 				let p = voice.connection.dispatcher.paused
 				if (p) {
 					voice.connection.dispatcher.resume()
-					return message.channel.send('Successfully resumed the music')
+					return message.channel.send('Successfully resumed the music').catch(()=>{message.reply("An error occurred")})
 				}else{
 					voice.connection.dispatcher.pause()
-					return message.channel.send('Successfully paused the music')
+					return message.channel.send('Successfully paused the music').catch(()=>{message.reply("An error occurred")})
 				}
 			} catch(e) {
 				console.log(e)
-				return message.channel.send("There currently isn't any music to pause!")
+				return message.channel.send("There currently isn't any music to pause!").catch(()=>{message.reply("An error occurred")})
 			}
 		break;
 
@@ -716,7 +747,7 @@ bot.on("message", async function (message) {
 		 */
 		case "save":
 			if (musicList.isEmpty() || last_Play == null) {
-				return message.channel.send(`Nothing's playing!`)
+				return message.channel.send(`Nothing's playing!`).catch(()=>{message.reply("An error occurred")})
 			}
 			var newQueue = musicList.copy()
 			newQueue.enqueue(last_Play)
@@ -746,7 +777,7 @@ bot.on("message", async function (message) {
 				fs.writeFileSync(filePath, JSON.stringify(file, null, "\t"))
 			}
 
-			return message.channel.send(`Current playlist saved under the name **${playlist_name}**!`)
+			return message.channel.send(`Current playlist saved under the name **${playlist_name}**!`).catch(()=>{message.reply("An error occurred")})
 			// musicList.print()
 
 		break;
@@ -759,27 +790,33 @@ bot.on("message", async function (message) {
 			if (!fs.existsSync('./Playlists')) {
 				console.log(`Playlist folder doesn't exist, creating now`)
 				fs.mkdirSync('./Playlists')
-				return message.channel.send(`There isn't a playlist for you! Create one now with **${PREFIX}save**`)
+				return message.channel.send(`There isn't a playlist for you! Create one now with **${PREFIX}save**`).catch(()=>{message.reply("An error occurred")})
 			}
 
 			if (!fs.existsSync(`./Playlists/${message.author.username}.json`)) {
 				console.log(`Playlist file for user doesn't exist`)
-				return message.channel.send(`You haven't saved a playlist yet! Create one now with **${PREFIX}save**`)
+				return message.channel.send(`You haven't saved a playlist yet! Create one now with **${PREFIX}save**`).catch(()=>{message.reply("An error occurred")})
 			}
 			var play_name = args.slice(1).join(' ') || 'default'
 			var file = require(`./Playlists/${message.author.username}.json`)
-			if (file[play_name] == undefined) {
-				return message.channel.send(`I couldn't find a playlist **${play_name}**. You can see your playlists with the command **${PREFIX}lists**`)
+			var plays = fuzzy([], false)
+			for (item in file) {
+				plays.add(item)
 			}
+			console.log(plays.get(play_name))
+			if (plays.get(play_name) == null || plays.get(play_name)[0][0] < 0.50) {
+				return message.channel.send(`I couldn't find a playlist **${play_name}**. You can see your playlists with the command **${PREFIX}lists**`).catch(()=>{message.reply("An error occurred")})
+			}
+			play_name = plays.get(play_name)[0][1]
 			var names = ''
 			musicList.clear()
 			for (i = 0; i < file[play_name].length; i++) {
 				musicList.enqueue(file[play_name][i])
 				names += `${i + 1}) **${file[play_name][i]}**\n`
 			}
-			message.channel.send(`Congrats! You have queued a total of **${file[play_name].length}** songs!`)
+			message.channel.send(`Congrats! You have queued a total of **${file[play_name].length}** songs from playlist **${play_name}**!`).catch(()=>{message.reply("An error occurred")})
 			loaded_playlist = true
-			return message.channel.send(names)
+			return message.channel.send(names).catch(()=>{message.reply("An error occurred")})
 		break;
 
 		/**
@@ -789,11 +826,11 @@ bot.on("message", async function (message) {
 		 */
 		case "loop":
 			if (!currentlyPlaying) {
-				return message.channel.send("There currently isn't any songs to repeat!")
+				return message.channel.send("There currently isn't any songs to repeat!").catch(()=>{message.reply("An error occurred")})
 			}
 			repeat_curr_song = !repeat_curr_song
 			console.log(`Looping?: ${repeat_curr_song}`)
-			return message.channel.send(repeat_curr_song ? "Looping current song!":"Looping turned off")
+			return message.channel.send(repeat_curr_song ? "Looping current song!":"Looping turned off").catch(()=>{message.reply("An error occurred")})
 		break;
 
 		/**
@@ -803,12 +840,12 @@ bot.on("message", async function (message) {
 		 */
 		case "loopall":
 			if (!currentlyPlaying) {
-				return message.channel.send("There currently isn't any songs to repeat!")
+				return message.channel.send("There currently isn't any songs to repeat!").catch(()=>{message.reply("An error occurred")})
 			}
 			repeat_curr_song = false
 			repeat_queue = !repeat_queue
 			console.log(`Looping queue?: ${repeat_queue}`)
-			return message.channel.send(repeat_queue ? "Looping entire queue!" : "Queue no longer looped!")
+			return message.channel.send(repeat_queue ? "Looping entire queue!" : "Queue no longer looped!").catch(()=>{message.reply("An error occurred")})
 		break;
 
 		/**
@@ -820,11 +857,11 @@ bot.on("message", async function (message) {
 			if (!fs.existsSync('./Playlists')) {
 				console.log(`Playlist folder doesn't exist, creating now`)
 				fs.mkdirSync('./Playlists')
-				return message.channel.send(`There isn't a playlist for you! Create one now with **${PREFIX}save**`)
+				return message.channel.send(`There isn't a playlist for you! Create one now with **${PREFIX}save**`).catch(()=>{message.reply("An error occurred")})
 			}
 			if (!fs.existsSync(`./Playlists/${message.author.username}.json`)) {
 				console.log(`Playlist file for user doesn't exist`)
-				return message.channel.send(`You haven't saved a playlist yet! Create one now with **${PREFIX}save**`)
+				return message.channel.send(`You haven't saved a playlist yet! Create one now with **${PREFIX}save**`).catch(()=>{message.reply("An error occurred")})
 			}
 			var user_playlist = require(`./Playlists/${message.author.username}.json`)
 			var lists = ``
@@ -836,7 +873,7 @@ bot.on("message", async function (message) {
 					lists += `\t${user_playlist[name][i]}\n`
 				}
 			}
-			return message.channel.send(`You currently have **${playlists.length}** ${playlists.length <= 1 ? "playlist":"playlists"}.\n${lists}`)
+			return message.channel.send(`You currently have **${playlists.length}** ${playlists.length <= 1 ? "playlist":"playlists"}.\n${lists}`).catch(()=>{message.reply("An error occurred")})
 		break;
 		/**
 		 * Command: TRACKS
@@ -847,7 +884,7 @@ bot.on("message", async function (message) {
 			var jb = require('./Requests/Jukebox.json')
 			var tracks = `${last_Play != null ? last_Play + ` (${jb[last_Play]['duration']}) ** ---> (currently playing)**${repeat_curr_song ? "_ Looping_": ""}\n` : ""}`
 			if (!currentlyPlaying && musicList.isEmpty()) {
-				return message.channel.send(`There currently isn't any songs playing.`)
+				return message.channel.send(`There currently isn't any songs playing.`).catch(()=>{message.reply("An error occurred")})
 			}
 			var cloned = musicList.copy()
 			console.log(cloned)
@@ -859,7 +896,7 @@ bot.on("message", async function (message) {
 				}
 			}
 			console.log("got to here in tracks")
-			return message.channel.send(`These are in the song queue:\n${repeat_queue ? "_Looping queue_\n":""}${tracks}${currentlyPlaying ? "\nThere are a total of **" + musicList.size() + " songs** in queue" : `\nMusic has not started yet, tell me to play when you are ready`}`)
+			return message.channel.send(`These are in the song queue:\n${repeat_queue ? "_Looping queue_\n":""}${tracks}${currentlyPlaying ? "\nThere are a total of **" + musicList.size() + " songs** waiting in queue" : `\nMusic has not started yet, tell me to play when you are ready`}`).catch(()=>{message.reply("An error occurred")})
 		break;
 
 		/**
@@ -870,17 +907,17 @@ bot.on("message", async function (message) {
 		case "del":
 			var channel = message.channel
 			if (channel.type != "dm") {
-				message.author.send("Hello. You have requested to edit your song list and can do so here. Just run a command and we can start to work your lists :D")
-				return message.channel.send("In order to avoid spam, you can edit your song playlists in the DMs. Check yours for the one I sent you just now")
+				message.author.send("Hello. You have requested to edit your song list and can do so here. Just run a command and we can start to work your lists :D").catch(()=>{message.reply("An error occurred")})
+				return message.channel.send("In order to avoid spam, you can edit your song playlists in the DMs. Check yours for the one I sent you just now").catch(()=>{message.reply("An error occurred")})
 			}
 			if (!fs.existsSync(`./Playlists`)) {
 				console.log("Playlists folder doesn't exist, creating...")
 				fs.mkdirSync('./Playlists')
 			}
 			if (!fs.existsSync(`./Playlists/${message.author.username}.json`)) {
-				return message.author.send('You currently do not have any playlists to edit. Please add one in order to edit')
+				return message.author.send('You currently do not have any playlists to edit. Please add one in order to edit').catch(()=>{message.reply("An error occurred")})
 			}
-			message.author.send("Which playlist(s) would you like to edit?")
+			message.author.send("Which playlist(s) would you like to edit?").catch(()=>{message.reply("An error occurred")})
 			var user_playlist = require(`./Playlists/${message.author.username}.json`)
 			var lists = ``
 			var playlists = []
@@ -891,31 +928,31 @@ bot.on("message", async function (message) {
 					lists += `\t${user_playlist[name][i]}\n`
 				}
 			}
-			message.author.send(lists)
+			message.author.send(lists).catch(()=>{message.reply("An error occurred")})
 			const collector = new Discord.MessageCollector(message.channel, m=>m.author.id === message.author.id, {time: 3000})
 			// console.log(collector)
 			var chosen = null
 			collector.on('collect', message=>{
 				console.log(`This is message: ${message}`)
 				if (!playlists.includes(message.content.toLowerCase())) {
-					return message.author.send(`That playlist does not exist`)
+					return message.author.send(`That playlist does not exist`).catch(()=>{message.reply("An error occurred")})
 				}
 				console.log(playlists)
 				console.log(playlists[message.content.trim()])
 				console.log(playlists[message.content.toLowerCase().trim()])
 				var pl = playlists.indexOf(message.content.trim()) || playlists.indexOf(message.content.toLowerCase().trim())
 				chosen = message.content
-				message.author.send(`Would you like to delete this playlist?\n**${playlists[pl]}**:\t${user_playlist[playlists[pl]]}`)
+				message.author.send(`Would you like to delete this playlist?\n**${playlists[pl]}**:\t${user_playlist[playlists[pl]]}`).catch(()=>{message.reply("An error occurred")})
 				const coll2 = new Discord.MessageCollector(message.channel,m=>m.author.id === message.author.id, {time:5000})
 				coll2.on('collect', message=>{
 					if (message.content.toLowerCase().startsWith('y')) {
 						console.log(`User wants to delete playlist`)
 						delete user_playlist[chosen] || user_playlist[chosen.toLowerCase()]
 						fs.writeFileSync(`./Playlists/${message.author.username}.json`, JSON.stringify(user_playlist, null, '\t'))
-						return message.author.send(`Playlist ${chosen} deleted! :)`)
+						return message.author.send(`Playlist ${chosen} deleted! :)`).catch(()=>{message.reply("An error occurred")})
 					}else{
 						console.log(`Confirmation not given`)
-						return message.author.send(`Confirmation not given for deletion`)
+						return message.author.send(`Confirmation not given for deletion`).catch(()=>{message.reply("An error occurred")})
 					}
 				})
 			})
@@ -941,18 +978,18 @@ bot.on("message", async function (message) {
 		}
 		if (banning.user === bot.user) {
 			console.log(`Ban attempted on bot by ${sender}`);
-			return message.channel.send("Nice try. You can't ban bots nub! >:D");
+			return message.channel.send("Nice try. You can't ban bots nub! >:D").catch(()=>{message.reply("An error occurred")});
 		}
 		if (banning == null)
-			return message.channel.send("Look here. Banning requires me to know who it is and YOU WON'T MENTION THEM. HOW WOULD I KNOW IT'S WHO YOU WANT!");
+			return message.channel.send("Look here. Banning requires me to know who it is and YOU WON'T MENTION THEM. HOW WOULD I KNOW IT'S WHO YOU WANT!").catch(()=>{message.reply("An error occurred")});
 		if (banning.hasPermission("ADMINISTRATOR"))
-			return message.channel.send("I'm sorry, but that player has admin permissions");
+			return message.channel.send("I'm sorry, but that player has admin permissions").catch(()=>{message.reply("An error occurred")});
 		if (!message.member.hasPermission("BAN_MEMBERS"))
-			return message.channel.send("YOU NO KAN BAN MEMBAS!");
+			return message.channel.send("YOU NO KAN BAN MEMBAS!").catch(()=>{message.reply("An error occurred")});
 		if (!banning)
-			return message.channel.send("You didn't say who!");
+			return message.channel.send("You didn't say who!").catch(()=>{message.reply("An error occurred")});
 		if (!banReason)
-			return message.channel.send("Please provide a reason to never see this person again (or maybe for a while) :3");
+			return message.channel.send("Please provide a reason to never see this person again (or maybe for a while) :3").catch(()=>{message.reply("An error occurred")})
 			message.guild.member(banning).ban({days, banReason});
 			const banEmbed = new Discord.RichEmbed()
 				.setAuthor(`${banning.user.username} was banned by ${sender}`, banning.user.displayAvatarURL)
@@ -961,10 +998,10 @@ bot.on("message", async function (message) {
 				.addField("Moderator: ", `${message.author.tag}`)
 				.addField("Reason:", `${banReason}`)
 				.addField("Days:", days);
-			message.channel.send(banEmbed);
-			message.channel.send("Done!");
+			message.channel.send(banEmbed).catch(()=>{message.reply("An error occurred")});
+			message.channel.send("Done!").catch(()=>{message.reply("An error occurred")});
 			try{
-				message.mentions.users.first().send(banEmbed);
+				message.mentions.users.first().send(banEmbed).catch(()=>{message.reply("An error occurred")});
 			}catch(e) {
 				console.log("Couldn't send message to user")
 			}
@@ -991,7 +1028,7 @@ bot.on("message", async function (message) {
 				bnbrEmbed.addField(`${numRule}. ${policy}`, explanation)
 				numRule += 1
 			}
-			return message.channel.send(bnbrEmbed)
+			return message.channel.send(bnbrEmbed).catch(()=>{message.reply("An error occurred")})
 			break;
 			//WARFRAME Game Commands
 			//~~~~~~~~~~~~~~~~~~~~~~V~~~~~~~~~~~~~~~~~
@@ -1007,26 +1044,26 @@ bot.on("message", async function (message) {
 			}else{
 				timeEmbed.addField("Time in Cetus: **Night**", `Time to DAY: **${timeDisplay}**`);
 			}
-			return message.channel.send(timeEmbed);
+			return message.channel.send(timeEmbed).catch(()=>{message.reply("An error occurred")});
 			break;
 		case "report":
 			if (!args[1]) {
-				return message.channel.send("No one mentioned");
+				return message.channel.send("No one mentioned").catch(()=>{message.reply("An error occurred")});
 			}
 			if (!args[2]) {
-				return message.channel.send("Please submit a reason");
+				return message.channel.send("Please submit a reason").catch(()=>{message.reply("An error occurred")});
 			}
 			try {
 			if (bot.user.username == message.mentions.users.first().username) {
 				console.log(`Report attempted on bot by ${message.author.username}`);
-				return message.channel.send("I'm sorry, but bot users cannot be reported");
+				return message.channel.send("I'm sorry, but bot users cannot be reported").catch(()=>{message.reply("An error occurred")});
 			}
 			//remove to not be able to report ADMINS
 			/*if (message.mentions.members.first().hasPermission("ADMINISTRATOR")) {
 				console.log(`Report made on ${message.mentions.users.first().username} by ${message.author.username}`);
-				return message.channel.send(`Report cannot be made on ${message.mentions.users.first().username}. Has ADMIN permissions`);
+				return message.channel.send(`Report cannot be made on ${message.mentions.users.first().username}. Has ADMIN permissions`).catch(()=>{message.reply("An error occurred")});
 			}*/
-			} catch(err) {console.log(err);return message.channel.send("Error encountered");}
+			} catch(err) {console.log(err);return message.channel.send("Error encountered").catch(()=>{message.reply("An error occurred")});}
 			if (!fs.existsSync("./Reports")) {
 				console.log("Report Folder does not exist, making it right now...");
 				fs.mkdirSync("./Reports");
@@ -1045,7 +1082,7 @@ bot.on("message", async function (message) {
 					fs.writeFile(fileName, JSON.stringify(file, null, 2), function(err) {
 						if (err) {
 							console.log(err);
-							return message.channel.send("Error encountered, please try again");
+							return message.channel.send("Error encountered, please try again").catch(()=>{message.reply("An error occurred")});
 						}
 						console.log(JSON.stringify(file, null, 2));
 						console.log(`Writing to ${fileName}`);
@@ -1074,7 +1111,7 @@ bot.on("message", async function (message) {
 					}
 				}
 				try{
-					message.mentions.users.first().send(`A report has been filed against you for breaching the BNBR Policy of **${message.guild.name}**. This is report number **${counts}**. If you believe that this is a mistake, please contact **${String(mods)}**\n\nReport: **${args.splice(2).join(' ')}**`)
+					message.mentions.users.first().send(`A report has been filed against you for breaching the BNBR Policy of **${message.guild.name}**. This is report number **${counts}**. If you believe that this is a mistake, please contact **${String(mods)}**\n\nReport: **${args.splice(2).join(' ')}**`).catch(()=>{message.reply("An error occurred")})
 				}catch(e) {
 					console.log("Couldn't send message to user")
 				}
@@ -1085,28 +1122,28 @@ bot.on("message", async function (message) {
 						message.guild.createRole({name:'time out', color:'DARK_GREY', hoist:true, permissions:[]}, 'time out')
 					}
 					message.guild.member(reported).setRoles(['time out']).then(()=>{
-						return message.channel.send(`User ${reported} has been set on a time out for now.`)
+						return message.channel.send(`User ${reported} has been set on a time out for now.`).catch(()=>{message.reply("An error occurred")})
 					})
 				}
 				if (count == 5) {
 					message.guild.member(reported).kick(message.content.split(" ").splice(2).join(" ")).then(()=>{
-						message.channel.send(`Thank you for reporting ${reported.username}. Due to their obsessive breaching of the BNBR Policy, they have been kicked from the server.`)
-						return reported.send(`You have been kicked from the server for excessive breaches. You may join back but be warned.`)
+						message.channel.send(`Thank you for reporting ${reported.username}. Due to their obsessive breaching of the BNBR Policy, they have been kicked from the server.`).catch(()=>{message.reply("An error occurred")})
+						return reported.send(`You have been kicked from the server for excessive breaches. You may join back but be warned.`).catch(()=>{message.reply("An error occurred")})
 					})
 				}
 				if (count == 8) {
 					let reasoning = `You have been reported 8 times for breaching the BNBR Policy and have been banned from the server. Please take this time to realize what went wrong with your life to be banned by a happy potato.`
 					message.guild.member(reported).ban({days:3,reason:message.content.split(" ").splice(2).join(" ")}).then(()=>{
-						message.channel.send(`Thank you for reporting this user. Proper actions have been taken`)
-						return reported.send(reasoning)
+						message.channel.send(`Thank you for reporting this user. Proper actions have been taken`).catch(()=>{message.reply("An error occurred")})
+						return reported.send(reasoning).catch(()=>{message.reply("An error occurred")})
 					})
 
 				}
-				return message.channel.send("Thank you, report submitted");
+				return message.channel.send("Thank you, report submitted").catch(()=>{message.reply("An error occurred")});
 			});
 			break;
 		default: //default case, used when an unknown command is given with the prefix
-			message.channel.send(`I don't know what to do with this ;-;\nTry using **${PREFIX}help** to see my commands`);
+			message.channel.send(`I don't know what to do with this ;-;\nTry using **${PREFIX}help** to see my commands`).catch(()=>{message.reply("An error occurred")});
 			break;
 
 	}
