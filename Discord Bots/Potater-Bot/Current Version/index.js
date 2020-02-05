@@ -193,6 +193,7 @@ bot.on("message", async function (message) {
 						.addField('load', 'Loads one of the user\'s playlist straight into the queue')
 						.addField(`lists`, "Displays the playlists that the user has saved")
 						.addField('loop', 'Toggles the loop')
+						.addField('shuffle', 'Shuffles the music queue')
 						.addField('loopall', 'Toggle the queue loop')
 						.addField("dc", "Disconnects the bot from the current voice channel")
 				}
@@ -248,6 +249,9 @@ bot.on("message", async function (message) {
 					break;
 				case "loop":
 					uEmbed.addField(`${PREFIX}loop`, "Toggles the looping on and off. Disconnecting the bot does not turn off the looping")
+					break;
+				case "shuffle":
+					uEmbed.addField(`${PREFIX}shuffle`, "Shuffles the music queue")
 					break;
 				case "loopall":
 					uEmbed.addField(`${PREFIX}loopall`, "Toggles the queue looping on and off. Turns off single song loop if on. Disconnecting the bot does not turn off the looping")
@@ -818,6 +822,35 @@ bot.on("message", async function (message) {
 			loaded_playlist = true
 			return message.channel.send(names).catch(()=>{message.reply("An error occurred")})
 		break;
+
+		/**
+		 * Command: SHUFFLE
+		 * @param None
+		 * Shuffles the current music queue
+		 */
+		case "shuffle":
+			var tmpArray = [] // holds the string names of the songs
+			if (currentlyPlaying) {
+				tmpArray.push(last_Play)
+			}
+			while (!musicList.isEmpty()) {
+				tmpArray.push(musicList.dequeue())
+			}
+			for (let i = 0; i < tmpArray.length; i++) {
+				let randPos = Math.floor((Math.random() * 100)) % tmpArray.length
+				let randItem = tmpArray[randPos]
+				tmpArray[randPos] = tmpArray[i]
+				tmpArray[i] = randItem
+			}
+			while(tmpArray.length != 0) {
+				musicList.enqueue(tmpArray.shift())
+			}
+			var voice = message.member.voiceChannel
+			if (voice != null) {
+				voice.connection.dispatcher.end()
+			}
+			return message.channel.send(`Shuffled music queue, see the new queue with **${PREFIX}tracks**`).catch(()=>{message.reply("An error has occurred")})
+			break;
 
 		/**
 		 * Command: LOOP
