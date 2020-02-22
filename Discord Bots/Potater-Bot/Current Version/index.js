@@ -28,6 +28,7 @@ const commandsOnlyChannels = ['music-requests']
 var loaded_playlist = false
 var repeat_curr_song = false
 var repeat_queue = false
+var exec = require('child_process').exec
 
 // This is the list of music requests that the bot has received
 var musicList = new Queue()
@@ -35,6 +36,8 @@ var fuzzy = require('fuzzyset.js')
 var currentlyPlaying = false
 var last_Play = null
 var jukebox = fuzzy([], false)
+
+var nicknames = fuzzy([], false)
 
 //derp batman image
 var bat = "https://vignette.wikia.nocookie.net/warframe/images/5/5f/Batman_derp_by_uchihirokilove-d59h7in.png/revision/latest?cb=20151020102248";
@@ -63,6 +66,18 @@ bot.on("guildMemberAdd", function (member) {
 	member.addRole(member.guild.roles.find("name", "French Fries"));
 
 });
+
+if (!fs.existsSync('./User\ Settings')) {
+	console.log(`User Settings folder doesn't exists, creating...`)
+	fs.mkdir('./User\ Settings', ()=>{
+		console.log('Folder created')
+		var ndm = require('./nodemon.json')
+		ndm.ignore.push(`./User Settings/`)
+		fs.writeFile('./nodemon.json',
+		JSON.stringify(ndm, null, '\t'),
+			err=>{if (err) console.log(err)})
+		})
+}
 
 let today = new Date()
 if (botSettings['lastUpdate']['month'] - today.getMonth() != 0) {
@@ -455,36 +470,37 @@ bot.on("message", async function (message) {
 			let author = message.author.username;
 			let messageArray = message.content.split(" ");
 			let reason = messageArray.splice(2).join(" ");
-			let toKick = message.mentions.users.first();
-			if (toKick === bot.user) {
+			let toKick = message.guild.member(message.mentions.users.first());
+			if (toKick == null)
+				return message.channel.send("Please mention someone. Don't just write their name!").catch(()=>{message.reply("An error occurred")});
+			if (toKick.user === bot.user) {
 				console.log(`Kick attempted on bot by ${author}`);
 				return message.channel.send("You can't kick bots!!").catch(()=>{message.reply("An error occurred")});
 			}
-			if (toKick == null)
-				return message.channel.send("Please mention someone. Don't just write their name!").catch(()=>{message.reply("An error occurred")});
-			if (message.mentions.members.first().hasPermission("ADMINISTRATOR"))
+			if (toKick.hasPermission("ADMINISTRATOR"))
 				return message.channel.send("I'm sorry, but that player has admin permissions").catch(()=>{message.reply("An error occurred")});
-			if (!message.member.hasPermission("KICK_MEMBERS"))
+			if (!message.guild.member(message.author).hasPermission("KICK_MEMBERS"))
 				return message.channel.send("NIEN! YOU NO HAVE PERMISSIONS!").catch(()=>{message.reply("An error occurred")});
-			if (!toKick)
-				return message.channel.send("You didn't say who!").catch(()=>{message.reply("An error occurred")});
 			if (!reason) {
 				return message.channel.send("You did not specify a reason!").catch(()=>{message.reply("An error occurred")});
 			}
-			message.guild.member(toKick).kick(reason);
 			const kickEmbed = new Discord.RichEmbed()
 				.setAuthor(`${toKick.username} was kicked by ${author}`, toKick.displayAvatarURL)
 				.addField("Kick Information:", "*User Kicked*")
-				.addField("Kickee:", `${toKick.tag}`)
+				.addField("Kickee:", `${toKick.user.tag}`)
 				.addField("Moderator: ", `${message.author.tag}`)
-				.addField("Reason:", `${reason}`);
+				.addField("Reason:", `${reason}`)
+				.setColor('red');
+			message.guild.member(toKick).kick(reason).then((member)=>{
+				try{
+					member.user.send(kickEmbed);
+				}catch(e) {
+					console.log(e)
+					console.log("Couldn't send it")
+				}
+			}).catch((reason)=>console.log(reason));
 			message.channel.send(kickEmbed).catch(()=>{message.reply("An error occurred")});
 			message.channel.send("Done!").catch(()=>{message.reply("An error occurred")});
-			try{
-				message.mentions.users.first().send(kickEmbed);
-			}catch(e) {
-				console.log("Couldn't send message to user")
-			}
 			break;
 		// MUSIC COMMANDS
 		// ------------------ V ---------------
@@ -519,7 +535,7 @@ bot.on("message", async function (message) {
 					w.push(channels.array()[i])
 				}
 			}
-			played = w.find((value)=>value.type == 'text')
+			played = w.find((value)=>value.type == 'text' && value.name.includes('previous'))
 			console.log(args.slice(1).join(' '))
 			if (!voice){
 				return message.channel.send('You need to be in a voice channel to play music!').catch(()=>{message.reply("An error occurred")});
@@ -564,7 +580,13 @@ bot.on("message", async function (message) {
 			}else{
 				try{
 					// console.log(jukebox.values())
-					var wait = await youtube.searchVideos(nextToPlay + " lyrics")
+					var wait = {};
+					try{
+						wait = await youtube.searchVideos(nextToPlay + " lyrics")
+					}catch(e) {
+						console.log("error happened!")
+						break;
+					}
 					videos = {
 						[nextToPlay] : {
 							"url" : wait.url,
@@ -603,6 +625,7 @@ bot.on("message", async function (message) {
 					last_Play = name
 
 					dispatcher.on('end', ()=>{
+						dispatcher.removeAllListeners()
 						console.log(`Song done! Played for ${dispatcher.totalStreamTime}ms`)
 						currentlyPlaying = false
 						if (repeat_curr_song) {
@@ -657,7 +680,7 @@ bot.on("message", async function (message) {
 										fs.writeFileSync('./Requests/Jukebox.json', JSON.stringify(file, null, '\t'))
 										console.log(`2. This is the video: ${Object.keys(ne)[0]}(${ne[next]['duration']}), ${ne[next]['url']}`)
 										play_video(channel, ne, sendChannel, errChannel)
-									})
+									}).catch(err=>{console.log("error: " + err)})
 								}catch(e) {
 									console.log(e)
 									return errChannel.send("Oh no! I can't search for new songs right now :(").catch(()=>{message.reply("An error occurred")})
@@ -990,6 +1013,62 @@ bot.on("message", async function (message) {
 				})
 			})
 		break;
+		case "nick": // !nick [ Mention | text ] [ Null | text ]
+			var person = message.author.tag
+			var holder = message.cleanContent.split(' ')
+			holder.shift()
+			var nickName = holder.join(' ')
+			if (message.mentions.members.first()) {
+				person = message.mentions.members.first().user.tag
+				var s = message.cleanContent.split(' ')
+				console.log(s)
+				s = s.filter(value=>!value.includes(message.mentions.members.first().user.username))
+				s.shift()
+				nickName = s.join(' ')
+			}
+			console.log(person)
+			console.log(nickName)
+
+			if (fs.existsSync('./User Settings/nicknames.json')) {
+				var nicksFile = require('./User Settings/nicknames.json')
+				var users = []
+				for (names in nicksFile) {
+					for (i = 0; i < nicksFile[names].length; i++) {
+						nicknames.add(nicksFile[names][i])
+						users.push(names)
+						console.log(nicksFile[names][i])
+					}
+				}
+
+				var matches = nicknames.get(nickName)
+				if (matches && matches[0][0] > 0.50) {
+					for (names in nicksFile) {
+						if (nicksFile[names].includes(matches[0][1])) {
+							if (names != person) {
+								return message.channel.send(`That nickname is already taken by ${names}!`)
+							}else{
+								return message.channel.send(`${person} already has that nickname!`)
+							}
+						}
+					}
+				}
+				if (users.includes(person)) {
+					nicksFile[person].push(nickName)
+				}else{
+					nicksFile[person] = [nickName]
+				}
+				fs.writeFileSync('./User Settings/nicknames.json', JSON.stringify(nicksFile, null, '\t'))
+				return message.channel.send(`Nickname **${nickName}** added to ${person}`)
+			}else{
+				var dat = {
+					[person] : [nickName]
+				}
+				fs.writeFileSync('./User Settings/nicknames.json', JSON.stringify(dat, null, '\t'))
+				console.log("File nicknames created...")
+			}
+
+		break;
+
 		case "ban":
 		/**
 		 * Command: BAN
@@ -1002,42 +1081,38 @@ bot.on("message", async function (message) {
 		let sender = message.author.username;
 		let messages = message.content.split(" ");
 		let banReason = messages.splice(2).join(" ");
-		let banning = message.mentions.members.first();
+		let banning = message.guild.member(message.mentions.members.first());
 		console.log(banReason);
 		let days = 1;
 		if (banReason.split(" ")[banReason.split(" ").length - 1]) {
 			let works = Number.isNaN(banReason.split(" ")[banReason.split(" ").length - 1])
 			days = !works ? banReason.split(" ")[banReason.split(" ").length - 1] : 1;
 		}
+		if (banning == null)
+			return message.channel.send("Look here. Banning requires me to know who it is and YOU WON'T MENTION THEM. HOW WOULD I KNOW IT'S WHO YOU WANT!").catch(()=>{message.reply("An error occurred")});
 		if (banning.user === bot.user) {
 			console.log(`Ban attempted on bot by ${sender}`);
 			return message.channel.send("Nice try. You can't ban bots nub! >:D").catch(()=>{message.reply("An error occurred")});
 		}
-		if (banning == null)
-			return message.channel.send("Look here. Banning requires me to know who it is and YOU WON'T MENTION THEM. HOW WOULD I KNOW IT'S WHO YOU WANT!").catch(()=>{message.reply("An error occurred")});
 		if (banning.hasPermission("ADMINISTRATOR"))
 			return message.channel.send("I'm sorry, but that player has admin permissions").catch(()=>{message.reply("An error occurred")});
 		if (!message.member.hasPermission("BAN_MEMBERS"))
 			return message.channel.send("YOU NO KAN BAN MEMBAS!").catch(()=>{message.reply("An error occurred")});
-		if (!banning)
-			return message.channel.send("You didn't say who!").catch(()=>{message.reply("An error occurred")});
 		if (!banReason)
 			return message.channel.send("Please provide a reason to never see this person again (or maybe for a while) :3").catch(()=>{message.reply("An error occurred")})
-			message.guild.member(banning).ban({days, banReason});
 			const banEmbed = new Discord.RichEmbed()
 				.setAuthor(`${banning.user.username} was banned by ${sender}`, banning.user.displayAvatarURL)
 				.addField("Ban Information:", "*User Banned*")
 				.addField("Banned:", `${banning.user.tag}`)
 				.addField("Moderator: ", `${message.author.tag}`)
 				.addField("Reason:", `${banReason}`)
+				.setColor('black')
 				.addField("Days:", days);
+			message.guild.member(banning).ban({days, banReason}).then(member=>{
+				member.user.send(banEmbed).catch((e)=>console.log(e))
+			});
 			message.channel.send(banEmbed).catch(()=>{message.reply("An error occurred")});
 			message.channel.send("Done!").catch(()=>{message.reply("An error occurred")});
-			try{
-				message.mentions.users.first().send(banEmbed).catch(()=>{message.reply("An error occurred")});
-			}catch(e) {
-				console.log("Couldn't send message to user")
-			}
 			break;
 		/**
 		 * Command: BNBR
