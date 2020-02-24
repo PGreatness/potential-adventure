@@ -9,14 +9,14 @@ class Queue {
 
     dequeue() {
         if (this.isEmpty()) {
-            return -1
+            return null
         }
         return this.items.shift()
     }
 
     peek() {
         if (this.isEmpty()) {
-            return -1
+            return null
         }
         return this.items[0]
     }
@@ -34,7 +34,7 @@ class Queue {
     }
 
     findPlace(elem) {
-        for (i =0; i < this.items.length; i++) {
+        for (let i =0; i < this.items.length; i++) {
             if (this.items[i] == elem) {
                 return i
             }
@@ -48,7 +48,7 @@ class Queue {
 
     copy() {
         var ret = new Queue()
-        for (i = 0; i < this.items.length; i++) {
+        for (let i = 0; i < this.items.length; i++) {
             ret.enqueue(this.items[i])
         }
         return ret
@@ -56,7 +56,7 @@ class Queue {
 
     uniqueCopy() {
         var tmp = []
-        for (i = 0; i < this.items.length; i++) {
+        for (let i = 0; i < this.items.length; i++) {
             if (!tmp.includes(this.items[i])) {
                 tmp.push(this.items[i])
             }
