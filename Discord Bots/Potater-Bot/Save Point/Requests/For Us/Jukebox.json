@@ -1,0 +1,57 @@
+{
+	"Classical": {
+		"url": "https://www.youtube.com/watch?v=Lkcvrxj0eLY",
+		"duration": "2:42",
+		"playCount": 1
+	},
+	"fireball": {
+		"url": "https://www.youtube.com/watch?v=7ztENhDCmu8",
+		"duration": "3:57",
+		"playCount": 1
+	},
+	"kileigh's song": {
+		"url": "./Requests/For Us/Kileigh's Song.mp3",
+		"duration": "2:48",
+		"playCount": 17
+	},
+	"panini": {
+		"url": "https://www.youtube.com/watch?v=VzBCoeQiHPE",
+		"duration": "1:56",
+		"playCount": 4
+	},
+	"caroline": {
+		"url": "https://www.youtube.com/watch?v=ZBuPhinZVzk",
+		"duration": "3:30",
+		"playCount": 13
+	},
+	"eleven khalid": {
+		"url": "https://www.youtube.com/watch?v=vNBgJ49b9Ag",
+		"duration": "3:24",
+		"playCount": 9
+	},
+	"eighteen khalid": {
+		"url": "https://www.youtube.com/watch?v=UAk98kIpt3E",
+		"duration": "3:49",
+		"playCount": 9
+	},
+	"talk Khalid": {
+		"url": "https://www.youtube.com/watch?v=qjL_-OFbk8I",
+		"duration": "3:16",
+		"playCount": 10
+	},
+	"i am the gift": {
+		"url": "https://www.youtube.com/watch?v=AsoKbb0XxnM",
+		"duration": "2:35",
+		"playCount": 5
+	},
+	"tour life": {
+		"url": "https://www.youtube.com/watch?v=Is6MJeUzW1g",
+		"duration": "3:01",
+		"playCount": 5
+	},
+	"sad xxxtenacion": {
+		"url": "https://www.youtube.com/watch?v=UiWMtUxcyZI",
+		"duration": "3:13",
+		"playCount": 5
+	}
+}

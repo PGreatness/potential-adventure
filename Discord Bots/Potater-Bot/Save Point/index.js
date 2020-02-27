@@ -25,17 +25,10 @@ const path = require('path')
 var bot = new Discord.Client();
 var repeater = "https://www.youtube.com/watch?v=Lkcvrxj0eLY"; // classical music
 const commandsOnlyChannels = ['music-requests']
-var loaded_playlist = false
-var repeat_curr_song = false
-var repeat_queue = false
-var exec = require('child_process').exec
+var serversQueues = {}
 
 // This is the list of music requests that the bot has received
-var musicList = new Queue()
 var fuzzy = require('fuzzyset.js')
-var currentlyPlaying = false
-var last_Play = null
-var jukebox = fuzzy([], false)
 
 var nicknames = fuzzy([], false)
 
@@ -57,13 +50,98 @@ var fortunes = [
 ];
 //Signal bot is ready to accept commands
 bot.on("ready", function () {
+	let today = new Date()
+	if (botSettings['lastUpdate']['month'] - today.getMonth() != 0) {
+		botSettings['lastUpdate'] = {
+			'month': today.getMonth(),
+			'day': today.getDate(),
+			'year': today.getFullYear()
+		}
+		fs.writeFileSync('./bot-settings.json', JSON.stringify(botSettings, null, '\t'))
+		console.log(`Monthly cleaning of Reports folder commencing...`)
+		fs.exists('./Reports', (exists) => {
+			if (exists) {
+				fs.readdir('./Reports', (err, files) => {
+					if (err) {
+						console.log(err)
+					}
+					for (const file of files) {
+						fs.unlink(path.join(__dirname + `/Reports`, file), err => {
+							if (err) console.log(err)
+						})
+					}
+					console.log(`Monthly cleaning complete!`)
+				})
+			}
+		})
+		// botSettings['lastUpdate'] = today.toJSON()
+	}
 	console.log("Ready");
+	bot.guilds.forEach((guild)=>{
+		serversQueues[guild.name] = {
+			"queue": new Queue(),
+			"loaded": false,
+			"rep" : false,
+			"repall":false,
+			"curr":false,
+			"last":null,
+			'juke': fuzzy([], false)
+		}
+		if (!fs.existsSync(`./User Settings/${guild.name}`)) {
+			fs.mkdir(`./User Settings/${guild.name}`, ()=>{
+				console.log(`Server folder made for ${guild.name}`)
+			})
+		}
+		if (!fs.existsSync(`./Playlists`)) {
+			fs.mkdir(`./Playlists`, ()=>{
+				console.log('Created folder for server')
+			})
+		}
+		if (!fs.existsSync(`./Playlists/${guild.name}`)) {
+			fs.mkdir(`./Playlists/${guild.name}`, ()=>{
+				console.log('Created folder for server')
+			})
+		}
+		if (!fs.existsSync(`./Reports`)) {
+			fs.mkdir(`./Reports`, ()=>{
+				console.log('Created folder for server')
+			})
+		}
+		if (!fs.existsSync(`./Reports/${guild.name}`)) {
+			fs.mkdir(`./Reports/${guild.name}`, ()=>{
+				console.log('Created folder for server')
+			})
+		}
+		if (!fs.existsSync(`./Requests`)) {
+			fs.mkdir(`./Requests`, ()=>{
+				console.log('Created folder for server')
+			})
+		}
+		if (!fs.existsSync(`./Requests/${guild.name}`)) {
+			fs.mkdir(`./Requests/${guild.name}`, ()=>{
+				console.log('Created folder for server')
+			})
+		}
+		if (!fs.existsSync(`./Requests/${guild.name}/Jukebox.json`)) {
+			console.log("Jukebox.json doesn't exist, creating now")
+			var jukes = {
+				"Classical": {
+					'url': "https://www.youtube.com/watch?v=Lkcvrxj0eLY",
+					'duration': '2:42',
+					'playCount': 1
+				}
+			}
+			fs.writeFileSync(`./Requests/${guild.name}/Jukebox.json`, JSON.stringify(jukes, null, '\t'))
+			serversQueues[message.guild.name]['juke'].add('Classical')
+		}
+	})
+	console.log('did this once')
+	// console.log(serversQueues)
 });
 //Greet a new member of the guild and set role to lowest role (French Fries)
 bot.on("guildMemberAdd", function (member) {
-	member.guild.channels.find("name", "pg-peeps").send(member.toString() + " Welcome to the squad! I am Potater-Bot, and you can interact with me using **" + PREFIX + "**!");
-
-	member.addRole(member.guild.roles.find("name", "French Fries"));
+	member.guild.channels.filter(channel=>channel.type == 'text').first().send(member.toString() + " Welcome to the squad! I am Potater-Bot, and you can interact with me using **" + PREFIX + "**!");
+	member.addRole(member.guild.roles.sort((a,b)=>a.position - b.position || a.id - b.id).filter(role=>role.name != '@everyone').first().name);
 
 });
 
@@ -79,34 +157,9 @@ if (!fs.existsSync('./User\ Settings')) {
 		})
 }
 
-let today = new Date()
-if (botSettings['lastUpdate']['month'] - today.getMonth() != 0) {
-	botSettings['lastUpdate'] = {
-		'month': today.getMonth(),
-		'day': today.getDate(),
-		'year': today.getFullYear()
-	}
-	fs.writeFileSync('./bot-settings.json', JSON.stringify(botSettings, null, '\t'))
-	console.log(`Monthly cleaning of Reports folder commencing...`)
-	fs.exists('./Reports', (exists)=>{
-		if (exists) {
-			fs.readdir('./Reports', (err, files)=>{
-				if (err) {
-					console.log(err)
-				}
-				for (const file of files) {
-					fs.unlink(path.join(__dirname + `/Reports`, file), err =>{
-						if (err) console.log(err)
-					})
-				}
-				console.log(`Monthly cleaning complete!`)
-			})
-		}
-	})
-	// botSettings['lastUpdate'] = today.toJSON()
-}
 
 bot.on("message", async function (message) {
+
 	//Do nothing if message is sent by a bot
 	if (message.author.equals(bot.user)) return;
 
@@ -120,12 +173,16 @@ bot.on("message", async function (message) {
 	}
 	// Chat Logging System
 	console.log(message.content);
-	var filePath = `./Chat Logs/${message.author.username}.json`;
+	var filePath = `./Chat Logs/${message.guild.name}/${message.author.username}.json`;
 	var log = `${message.createdAt} ${message.author.username} : ${message.content}`;
 	console.log("trying to access file...");
 	if (!fs.existsSync("./Chat Logs")) {
 		console.log("dir does not exist, making now");
-		fs.mkdirSync("./Chat Logs");
+		fs.mkdirSync("./Chat Logs")
+	}
+	if (!fs.existsSync(`./Chat Logs/${message.guild.name}`)) {
+		console.log("guild dir doesn't exist, creating...")
+		fs.mkdirSync(`./Chat Logs/${message.guild.name}`)
 	}
 
 	var json = {
@@ -145,17 +202,6 @@ bot.on("message", async function (message) {
 	if (!fs.existsSync('./Requests')) {
 		console.log("Requests folder doesn't exist, creating now")
 		fs.mkdirSync('./Requests')
-	}
-	if (!fs.existsSync('./Requests/Jukebox.json')) {
-		console.log("Jukebox.json doesn't exist, creating now")
-		var jukes = {
-			"Classical" : {
-				'url' : "https://www.youtube.com/watch?v=Lkcvrxj0eLY",
-				'duration':'2:42'
-			}
-		}
-		fs.writeFileSync('./Requests/Jukebox.json', JSON.stringify(jukes, null, '\t'))
-		jukebox.add('Classical')
 	}
 
 	//Message not meant for bot
@@ -513,17 +559,17 @@ bot.on("message", async function (message) {
 		 * the ytdl-core library to fix the problem
 		 */
 		case "play":
-			console.log(jukebox.values().length == 0)
-			var fw = require('./Requests/Jukebox.json')
+			console.log(serversQueues[message.guild.name]['juke'].values().length == 0)
+			var fw = require(`./Requests/${message.guild.name}/Jukebox.json`)
 			for (song in fw) {
 				// console.log(fw)
 				// console.log(song.length)
 				// console.log(typeof song)
-				jukebox.add(song)
+				serversQueues[message.guild.name]['juke'].add(song)
 			}
-			if (jukebox.values().length == 0) {
+			if (serversQueues[message.guild.name]['juke'].values().length == 0) {
 				console.log("adding classical")
-				jukebox.add("Classical")
+				serversQueues[message.guild.name]['juke'].add("Classical")
 			}
 
 			var voice = message.member.voiceChannel
@@ -551,53 +597,64 @@ bot.on("message", async function (message) {
 			if (!perms.has('CONNECT') || !perms.has('SPEAK')) {
 				return message.channel.send("I need to be able to connect and speak in the voice channel for that!").catch(()=>{message.reply("An error occurred")})
 			}
-			if (loaded_playlist && args.slice(1).join(' ') == '') {
+			if (serversQueues[message.guild.name]['loaded'] && args.slice(1).join(' ') == '') {
 				// do not enqueue
 			}else{
-				musicList.enqueue(args.slice(1).join(' '))
+				serversQueues[message.guild.name]['queue'].enqueue(args.slice(1).join(' '))
 			}
-			if (currentlyPlaying) {
-				return message.channel.send(`There is currently a music begin played. Your request is currently **number ${musicList.size()}** on the waiting list`).catch(()=>{message.reply("An error occurred")})
+			if (serversQueues[message.guild.name]['curr']) {
+				return message.channel.send(`There is currently a music begin played. Your request is currently **number ${serversQueues[message.guild.name]['queue'].size()}** on the waiting list`).catch(()=>{message.reply("An error occurred")})
 			}
 			var youtube = new YouTube(YOUTUBE_API_KEY)
-			// musicList.enqueue(args.slice(1).join(' '))
-			var nextToPlay = musicList.dequeue() || "music"
-			var file = require('./Requests/Jukebox.json')
+			// serversQueues[message.guild.name]['queue'].enqueue(args.slice(1).join(' '))
+			var nextToPlay = serversQueues[message.guild.name]['queue'].dequeue() || "music"
+			var file = require(`./Requests/${message.guild.name}/Jukebox.json`)
 			var videos = {}
 			console.log('hereas')
 			console.log(nextToPlay)
-			var closest = jukebox.get(nextToPlay)
-			console.log(jukebox.get(nextToPlay))
-			// console.log(jukebox.values())
+			var closest = serversQueues[message.guild.name]['juke'].get(nextToPlay)
+			console.log('juke: ' + serversQueues[message.guild.name]['juke'].get(nextToPlay))
+			// console.log(serversQueues[message.guild.name]['juke'].values())
 			if (closest != null && closest[0][0] > 0.65) {
 				var closest_name = closest[0][1]
+				console.log(closest_name)
 				videos = {
 					[closest_name] : {
 						"url" : file[closest_name]["url"],
-						"duration" : file[closest_name]["duration"]
+						"duration" : file[closest_name]["duration"],
+						"playCount" : file[closest_name]['playCount']
 					}
 				}
 			}else{
 				try{
-					// console.log(jukebox.values())
+					// console.log(serversQueues[message.guild.name]['juke'].values())
 					var wait = {};
-					try{
-						wait = await youtube.searchVideos(nextToPlay + " lyrics")
-					}catch(e) {
-						console.log("error happened!")
-						break;
-					}
-					videos = {
-						[nextToPlay] : {
-							"url" : wait.url,
-							"duration" : wait.length
+					if (true) {
+					// if (nextToPlay.toLowerCase() != "Kileigh's Song".toLowerCase()) {
+						try {
+							wait = await youtube.searchVideos(nextToPlay + " lyrics")
+						} catch (e) {
+							console.log("error happened!")
+							break;
+						}
+					}else{
+						wait = {
+							"url" : `./Requests/${message.guild.name}/Kileigh's Song.mp3`,
+							"length" : "2:48"
 						}
 					}
-					console.log(videos)
-					console.log(nextToPlay)
-					jukebox.add(nextToPlay)
-					file[nextToPlay] = { "url" : videos[nextToPlay]['url'], "duration" : videos[nextToPlay]['duration'] }
-					fs.writeFileSync('./Requests/Jukebox.json', JSON.stringify(file, null, '\t'))
+						videos = {
+							[nextToPlay]: {
+								"url": wait.url,
+								"duration": wait.length,
+								'playCount' : 1
+							}
+						}
+						console.log(videos)
+						console.log(nextToPlay)
+						serversQueues[message.guild.name]['juke'].add(nextToPlay)
+						file[nextToPlay] = { "url": videos[nextToPlay]['url'], "duration": videos[nextToPlay]['duration'], 'playCount': 1 }
+						fs.writeFileSync(`./Requests/${message.guild.name}/Jukebox.json`, JSON.stringify(file, null, '\t'))
 				}catch(e) {
 					console.log(e)
 					return message.channel.send(`Woops! I can't search for music anymore... :(\nTry again tomorrow`).catch(()=>{message.reply("An error occurred")})
@@ -605,7 +662,7 @@ bot.on("message", async function (message) {
 			}
 
 			console.log(videos)
-			// console.log(jukebox)
+			// console.log(serversQueues[message.guild.name]['juke'])
 			/**
 			 * Plays the video requested and any queued videos as well
 			 * @param {Discord.VoiceChannel} channel the voice channel
@@ -617,44 +674,69 @@ bot.on("message", async function (message) {
 				channel.join().then(connection=>{
 					var name = Object.keys(vids)[0]
 					console.log(vids)
-					const stream = ytdl(vids[name]['url'], { filter: 'audioonly' })
-					const dispatcher = connection.playStream(stream)
-					dispatcher.setVolumeLogarithmic(0.25)
+					var stream = vids[name]['url']
+					// console.log(name.toLowerCase())
+					// console.log("Kileigh's Song".toLowerCase())
+					// console.log(name.toLowerCase() == "Kileigh's Song".toLowerCase())
+					if (true) {
+					// if (name.toLowerCase() != "Kileigh's Song".toLowerCase()) {
+						stream = ytdl(vids[name]['url'], { filter: 'audioonly' })
+					}
+					const dispatcher = connection.playStream(stream || vids[name]['url'])
+					dispatcher.setVolumeLogarithmic(0.35)
 					console.log(`Currently playing ${name}(${vids[name]['duration']}) with a link of ${vids[name]['url']}`)
-					currentlyPlaying = true
-					last_Play = name
+					serversQueues[message.guild.name]['curr'] = true
+					serversQueues[message.guild.name]['last'] = name
 
 					dispatcher.on('end', ()=>{
 						dispatcher.removeAllListeners()
+						fw[name]['playCount'] += 1
+						fs.writeFile(`./Requests/${message.guild.name}/Jukebox.json`, JSON.stringify(fw, null, '\t'), ()=>console.log('edited playCount'))
 						console.log(`Song done! Played for ${dispatcher.totalStreamTime}ms`)
-						currentlyPlaying = false
-						if (repeat_curr_song) {
+						serversQueues[message.guild.name]['curr'] = false
+						if (serversQueues[message.guild.name]['rep']) {
 							return play_video(channel, vids, sendChannel, errChannel)
 						}
-						sendChannel.send(`Did you like it? Here it is: ${vids[name]['url']}`).catch(()=>{message.reply("An error occurred")})
-						console.log(musicList.isEmpty())
-						console.log(musicList)
-						if (musicList.isEmpty()) {
-							loaded_playlist = false
+						if (true) {
+						// if (name.toLowerCase() != "Kileigh's Song".toLowerCase()) {
+							if (!serversQueues[message.guild.name]['repall']) {
+								sendChannel.send(`Did you like it? Here it is: ${vids[name]['url']}`).catch(()=>{message.reply("An error occurred")})
+							}
+						}
+						console.log(serversQueues[message.guild.name]['queue'].isEmpty())
+						console.log(serversQueues[message.guild.name]['queue'])
+						if (serversQueues[message.guild.name]['queue'].isEmpty()) {
+							serversQueues[message.guild.name]['loaded'] = false
 							channel.leave()
 							return
 						}
-						if (repeat_queue && !musicList.isEmpty()) {
+						if (serversQueues[message.guild.name]['repall'] && !serversQueues[message.guild.name]['queue'].isEmpty()) {
 							console.log("queueing")
-							musicList.enqueue(name)
+							serversQueues[message.guild.name]['queue'].enqueue(name)
 						}
-						if (!musicList.isEmpty()) {
-							var next = musicList.dequeue() || "music"
-							var match = jukebox.get(next)
+						if (!serversQueues[message.guild.name]['queue'].isEmpty()) {
+							var next = serversQueues[message.guild.name]['queue'].dequeue() || "music"
+							var match = serversQueues[message.guild.name]['juke'].get(next)
 							var next_video = null
-							var f = require('./Requests/Jukebox.json')
+							var f = require(`./Requests/${message.guild.name}/Jukebox.json`)
+							if (match && match[0][0] > 0.65 && match[0][1] == "Kileigh's Song") {
+								next_video = {
+									[match[0][1]] : {
+										"url" : `./Requests/${message.guild.name}/Kileigh's Song.mp3`,
+										"duration" : "2:48",
+										'playCount': f[match[0][1]]['playCount']
+									}
+								}
+								return play_video(voice, next_video, played, message.channel)
+							}
 							if (match != null && match[0][0] > 0.65) {
 								console.log(`Got here`)
 								var closest_match = match[0][1]
 								next_video = {
 									[closest_match]: {
 										"url": f[closest_match]['url'],
-										"duration": f[closest_match]['duration']
+										"duration": f[closest_match]['duration'],
+										'playCount' : f[closest_match]['playCount']
 									}
 								}
 								console.log(match)
@@ -665,19 +747,21 @@ bot.on("message", async function (message) {
 								try{
 									youtube.searchVideos(next + " lyrics").then((video)=>{
 										next_video = video
-										jukebox.add(next)
+										serversQueues[message.guild.name]['juke'].add(next)
 										var vi = {
 											"url" : video.url,
-											"duration" : video.length
+											"duration" : video.length,
+											"playCount" : 1
 										}
 										f[next] = vi
 										var ne = {
 											[next] : {
 												"url": video.url,
-												"duration": video.length
+												"duration": video.length,
+												'playCount' : 1
 											}
 										}
-										fs.writeFileSync('./Requests/Jukebox.json', JSON.stringify(file, null, '\t'))
+										fs.writeFileSync(`./Requests/${message.guild.name}/Jukebox.json`, JSON.stringify(file, null, '\t'))
 										console.log(`2. This is the video: ${Object.keys(ne)[0]}(${ne[next]['duration']}), ${ne[next]['url']}`)
 										play_video(channel, ne, sendChannel, errChannel)
 									}).catch(err=>{console.log("error: " + err)})
@@ -707,9 +791,13 @@ bot.on("message", async function (message) {
 					return message.channel.send("I need to be able to connect and speak in voice channels for that!").catch(()=>{message.reply("An error occurred")})
 				}
 				try {
-					if (!currentlyPlaying) {
+					if (!serversQueues[message.guild.name]['curr']) {
 						throw new Error('No music playing')
 					}
+					// Uncomment to embarrass Kileigh
+					// if (serversQueues[message.guild.name]['last'].toLowerCase() == "kileigh's song" && serversQueues[message.guild.name]['curr']) {
+					// 	return message.channel.send("Sorry, this song has been marked unskippable. If you think this is an error, please contact an admin :)").catch(()=>message.reply("An error occurred"))
+					// }
 					voice.connection.dispatcher.end()
 					return message.channel.send("Music skipped").catch(()=>{message.reply("An error occurred")})
 				} catch(e) {
@@ -729,8 +817,8 @@ bot.on("message", async function (message) {
 				}
 				for(var i = 0; i < voice.members.array().length; i++) {
 					if (bot.user.username == voice.members.array()[i].user.username) {
-						loaded_playlist = false
-						musicList.clear()
+						serversQueues[message.guild.name]['loaded'] = false
+						serversQueues[message.guild.name]['queue'].clear()
 						voice.connection.disconnect()
 						return message.channel.send("Goodbye!").catch(()=>{message.reply("An error occurred")})
 					}
@@ -773,15 +861,15 @@ bot.on("message", async function (message) {
 		 * the playlist. Nameless playlists append to the default one
 		 */
 		case "save":
-			if (musicList.isEmpty() || last_Play == null) {
+			if (serversQueues[message.guild.name]['queue'].isEmpty() && !serversQueues[message.guild.name]['curr']) {
 				return message.channel.send(`Nothing's playing!`).catch(()=>{message.reply("An error occurred")})
 			}
-			var newQueue = musicList.copy()
-			newQueue.enqueue(last_Play)
+			var newQueue = serversQueues[message.guild.name]['queue'].copy()
+			newQueue.enqueue(serversQueues[message.guild.name]['last'])
 			newQueue = newQueue.uniqueCopy()
 			var playlist_name = args.slice(1).join(' ') || 'default'
 
-			var filePath = `./Playlists/${message.author.username}.json`;
+			var filePath = `./Playlists/${message.guild.name}/${message.author.username}.json`;
 			console.log("trying to access file...");
 
 			if (!fs.existsSync(`./Playlists`)) {
@@ -805,7 +893,7 @@ bot.on("message", async function (message) {
 			}
 
 			return message.channel.send(`Current playlist saved under the name **${playlist_name}**!`).catch(()=>{message.reply("An error occurred")})
-			// musicList.print()
+			// serversQueues[message.guild.name]['queue'].print()
 
 		break;
 		/**
@@ -820,12 +908,12 @@ bot.on("message", async function (message) {
 				return message.channel.send(`There isn't a playlist for you! Create one now with **${PREFIX}save**`).catch(()=>{message.reply("An error occurred")})
 			}
 
-			if (!fs.existsSync(`./Playlists/${message.author.username}.json`)) {
+			if (!fs.existsSync(`./Playlists/${message.guild.name}/${message.author.username}.json`)) {
 				console.log(`Playlist file for user doesn't exist`)
 				return message.channel.send(`You haven't saved a playlist yet! Create one now with **${PREFIX}save**`).catch(()=>{message.reply("An error occurred")})
 			}
 			var play_name = args.slice(1).join(' ') || 'default'
-			var file = require(`./Playlists/${message.author.username}.json`)
+			var file = require(`./Playlists/${message.guild.name}/${message.author.username}.json`)
 			var plays = fuzzy([], false)
 			for (item in file) {
 				plays.add(item)
@@ -836,13 +924,13 @@ bot.on("message", async function (message) {
 			}
 			play_name = plays.get(play_name)[0][1]
 			var names = ''
-			musicList.clear()
+			serversQueues[message.guild.name]['queue'].clear()
 			for (i = 0; i < file[play_name].length; i++) {
-				musicList.enqueue(file[play_name][i])
+				serversQueues[message.guild.name]['queue'].enqueue(file[play_name][i])
 				names += `${i + 1}) **${file[play_name][i]}**\n`
 			}
 			message.channel.send(`Congrats! You have queued a total of **${file[play_name].length}** songs from playlist **${play_name}**!`).catch(()=>{message.reply("An error occurred")})
-			loaded_playlist = true
+			serversQueues[message.guild.name]['loaded'] = true
 			return message.channel.send(names).catch(()=>{message.reply("An error occurred")})
 		break;
 
@@ -853,11 +941,11 @@ bot.on("message", async function (message) {
 		 */
 		case "shuffle":
 			var tmpArray = [] // holds the string names of the songs
-			if (currentlyPlaying) {
-				tmpArray.push(last_Play)
+			if (serversQueues[message.guild.name]['curr']) {
+				tmpArray.push(serversQueues[message.guild.name]['last'])
 			}
-			while (!musicList.isEmpty()) {
-				tmpArray.push(musicList.dequeue())
+			while (!serversQueues[message.guild.name]['queue'].isEmpty()) {
+				tmpArray.push(serversQueues[message.guild.name]['queue'].dequeue())
 			}
 			for (let i = 0; i < tmpArray.length; i++) {
 				let randPos = Math.floor((Math.random() * 100)) % tmpArray.length
@@ -866,7 +954,7 @@ bot.on("message", async function (message) {
 				tmpArray[i] = randItem
 			}
 			while(tmpArray.length != 0) {
-				musicList.enqueue(tmpArray.shift())
+				serversQueues[message.guild.name]['queue'].enqueue(tmpArray.shift())
 			}
 			var voice = message.member.voiceChannel
 			if (voice != null) {
@@ -881,12 +969,12 @@ bot.on("message", async function (message) {
 		 * Loops the current song in the queue
 		 */
 		case "loop":
-			if (!currentlyPlaying) {
+			if (!serversQueues[message.guild.name]['curr']) {
 				return message.channel.send("There currently isn't any songs to repeat!").catch(()=>{message.reply("An error occurred")})
 			}
-			repeat_curr_song = !repeat_curr_song
-			console.log(`Looping?: ${repeat_curr_song}`)
-			return message.channel.send(repeat_curr_song ? "Looping current song!":"Looping turned off").catch(()=>{message.reply("An error occurred")})
+			serversQueues[message.guild.name]['rep'] = !serversQueues[message.guild.name]['rep']
+			console.log(`Looping?: ${serversQueues[message.guild.name]['rep']}`)
+			return message.channel.send(serversQueues[message.guild.name]['rep'] ? "Looping current song!":"Looping turned off").catch(()=>{message.reply("An error occurred")})
 		break;
 
 		/**
@@ -895,13 +983,13 @@ bot.on("message", async function (message) {
 		 * Loops the entire queue
 		 */
 		case "loopall":
-			if (!currentlyPlaying) {
+			if (!serversQueues[message.guild.name]['curr']) {
 				return message.channel.send("There currently isn't any songs to repeat!").catch(()=>{message.reply("An error occurred")})
 			}
-			repeat_curr_song = false
-			repeat_queue = !repeat_queue
-			console.log(`Looping queue?: ${repeat_queue}`)
-			return message.channel.send(repeat_queue ? "Looping entire queue!" : "Queue no longer looped!").catch(()=>{message.reply("An error occurred")})
+			serversQueues[message.guild.name]['rep'] = false
+			serversQueues[message.guild.name]['repall'] = !serversQueues[message.guild.name]['repall']
+			console.log(`Looping queue?: ${serversQueues[message.guild.name]['repall']}`)
+			return message.channel.send(serversQueues[message.guild.name]['repall'] ? "Looping entire queue!" : "Queue no longer looped!").catch(()=>{message.reply("An error occurred")})
 		break;
 
 		/**
@@ -915,11 +1003,11 @@ bot.on("message", async function (message) {
 				fs.mkdirSync('./Playlists')
 				return message.channel.send(`There isn't a playlist for you! Create one now with **${PREFIX}save**`).catch(()=>{message.reply("An error occurred")})
 			}
-			if (!fs.existsSync(`./Playlists/${message.author.username}.json`)) {
+			if (!fs.existsSync(`./Playlists/${message.guild.name}/${message.author.username}.json`)) {
 				console.log(`Playlist file for user doesn't exist`)
 				return message.channel.send(`You haven't saved a playlist yet! Create one now with **${PREFIX}save**`).catch(()=>{message.reply("An error occurred")})
 			}
-			var user_playlist = require(`./Playlists/${message.author.username}.json`)
+			var user_playlist = require(`./Playlists/${message.guild.name}/${message.author.username}.json`)
 			var lists = ``
 			var playlists = []
 			for (name in user_playlist) {
@@ -937,12 +1025,12 @@ bot.on("message", async function (message) {
 		 * Shows the current list of songs playing
 		 */
 		case "tracks":
-			var jb = require('./Requests/Jukebox.json')
-			var tracks = `${last_Play != null ? last_Play + ` (${jb[last_Play]['duration']}) ** ---> (currently playing)**${repeat_curr_song ? "_ Looping_": ""}\n` : ""}`
-			if (!currentlyPlaying && musicList.isEmpty()) {
+			var jb = require(`./Requests/${message.guild.name}/Jukebox.json`)
+			var tracks = `${serversQueues[message.guild.name]['last'] != null ? serversQueues[message.guild.name]['last'] + ` (${jb[serversQueues[message.guild.name]['last']]['duration']}) ** ---> (currently playing)**${serversQueues[message.guild.name]['rep'] ? "_ Looping_": ""}\n` : ""}`
+			if (!serversQueues[message.guild.name]['curr'] && serversQueues[message.guild.name]['queue'].isEmpty()) {
 				return message.channel.send(`There currently isn't any songs playing.`).catch(()=>{message.reply("An error occurred")})
 			}
-			var cloned = musicList.copy()
+			var cloned = serversQueues[message.guild.name]['queue'].copy()
 			console.log(cloned)
 			while(!cloned.isEmpty()) {
 				var song = cloned.dequeue()
@@ -952,7 +1040,7 @@ bot.on("message", async function (message) {
 				}
 			}
 			console.log("got to here in tracks")
-			return message.channel.send(`These are in the song queue:\n${repeat_queue ? "_Looping queue_\n":""}${tracks}${currentlyPlaying ? "\nThere are a total of **" + musicList.size() + " songs** waiting in queue" : `\nMusic has not started yet, tell me to play when you are ready`}`).catch(()=>{message.reply("An error occurred")})
+			return message.channel.send(`These are in the song queue:\n${serversQueues[message.guild.name]['repall'] ? "_Looping queue_\n":""}${tracks}${serversQueues[message.guild.name]['curr'] ? "\nThere are a total of **" + serversQueues[message.guild.name]['queue'].size() + " songs** waiting in queue" : `\nMusic has not started yet, tell me to play when you are ready`}`).catch(()=>{message.reply("An error occurred")})
 		break;
 
 		/**
@@ -970,11 +1058,11 @@ bot.on("message", async function (message) {
 				console.log("Playlists folder doesn't exist, creating...")
 				fs.mkdirSync('./Playlists')
 			}
-			if (!fs.existsSync(`./Playlists/${message.author.username}.json`)) {
+			if (!fs.existsSync(`./Playlists/${message.guild.name}/${message.author.username}.json`)) {
 				return message.author.send('You currently do not have any playlists to edit. Please add one in order to edit').catch(()=>{message.reply("An error occurred")})
 			}
 			message.author.send("Which playlist(s) would you like to edit?").catch(()=>{message.reply("An error occurred")})
-			var user_playlist = require(`./Playlists/${message.author.username}.json`)
+			var user_playlist = require(`./Playlists/${message.guild.name}/${message.author.username}.json`)
 			var lists = ``
 			var playlists = []
 			for (name in user_playlist) {
@@ -1004,7 +1092,7 @@ bot.on("message", async function (message) {
 					if (message.content.toLowerCase().startsWith('y')) {
 						console.log(`User wants to delete playlist`)
 						delete user_playlist[chosen] || user_playlist[chosen.toLowerCase()]
-						fs.writeFileSync(`./Playlists/${message.author.username}.json`, JSON.stringify(user_playlist, null, '\t'))
+						fs.writeFileSync(`./Playlists/${message.guild.name}/${message.author.username}.json`, JSON.stringify(user_playlist, null, '\t'))
 						return message.author.send(`Playlist ${chosen} deleted! :)`).catch(()=>{message.reply("An error occurred")})
 					}else{
 						console.log(`Confirmation not given`)
@@ -1029,8 +1117,8 @@ bot.on("message", async function (message) {
 			console.log(person)
 			console.log(nickName)
 
-			if (fs.existsSync('./User Settings/nicknames.json')) {
-				var nicksFile = require('./User Settings/nicknames.json')
+			if (fs.existsSync(`./User Settings/${message.guild.name}/nicknames.json`)) {
+				var nicksFile = require(`./User Settings/${message.guild.name}/nicknames.json`)
 				var users = []
 				for (names in nicksFile) {
 					for (i = 0; i < nicksFile[names].length; i++) {
@@ -1057,13 +1145,13 @@ bot.on("message", async function (message) {
 				}else{
 					nicksFile[person] = [nickName]
 				}
-				fs.writeFileSync('./User Settings/nicknames.json', JSON.stringify(nicksFile, null, '\t'))
+				fs.writeFileSync(`./User Settings/${message.guild.name}/nicknames.json`, JSON.stringify(nicksFile, null, '\t'))
 				return message.channel.send(`Nickname **${nickName}** added to ${person}`)
 			}else{
 				var dat = {
 					[person] : [nickName]
 				}
-				fs.writeFileSync('./User Settings/nicknames.json', JSON.stringify(dat, null, '\t'))
+				fs.writeFileSync(`./User Settings/${message.guild.name}/nicknames.json`, JSON.stringify(dat, null, '\t'))
 				console.log("File nicknames created...")
 			}
 
@@ -1138,22 +1226,6 @@ bot.on("message", async function (message) {
 			}
 			return message.channel.send(bnbrEmbed).catch(()=>{message.reply("An error occurred")})
 			break;
-			//WARFRAME Game Commands
-			//~~~~~~~~~~~~~~~~~~~~~~V~~~~~~~~~~~~~~~~~
-		case "etime": //WIP
-			const timeEmbed = new Discord.RichEmbed();
-			var d = new Date();
-			var HoursNow = d.getHours() % 12;
-			var MinutesNow = d.getMinutes() % 60;
-			var minCount = (HoursNow * 60) + (MinutesNow * 60);
-			timeDisplay = `${HoursNow}:${MinutesNow}`;
-			if (minCount % 150 < 100) { //150 mins is one day/night cycle. 100 min is 1 day
-				timeEmbed.addField("Time in Cetus: **Day**", `Time to NIGHT: **${timeDisplay}**`);
-			}else{
-				timeEmbed.addField("Time in Cetus: **Night**", `Time to DAY: **${timeDisplay}**`);
-			}
-			return message.channel.send(timeEmbed).catch(()=>{message.reply("An error occurred")});
-			break;
 		case "report":
 			if (!args[1]) {
 				return message.channel.send("No one mentioned").catch(()=>{message.reply("An error occurred")});
@@ -1176,7 +1248,7 @@ bot.on("message", async function (message) {
 				console.log("Report Folder does not exist, making it right now...");
 				fs.mkdirSync("./Reports");
 			}
-			var fileName = `./Reports/${message.mentions.users.first().username}.json`;
+			var fileName = `./Reports/${message.guild.name}/${message.mentions.users.first().username}.json`;
 			var counts = 1;
 			fs.exists(fileName, function(exists) {
 				if (exists) {
