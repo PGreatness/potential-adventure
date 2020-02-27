@@ -1,0 +1,27 @@
+{
+	"Classical": {
+		"url": "https://www.youtube.com/watch?v=Lkcvrxj0eLY",
+		"duration": "2:42",
+		"playCount": 1
+	},
+	"fireball": {
+		"url": "https://www.youtube.com/watch?v=7ztENhDCmu8",
+		"duration": "3:57",
+		"playCount": 1
+	},
+	"kileigh's song": {
+		"url": "./Requests/For Us/Kileigh's Song.mp3",
+		"duration": "2:48",
+		"playCount": 12
+	},
+	"panini": {
+		"url": "https://www.youtube.com/watch?v=VzBCoeQiHPE",
+		"duration": "1:56",
+		"playCount": 4
+	},
+	"caroline": {
+		"url": "https://www.youtube.com/watch?v=ZBuPhinZVzk",
+		"duration": "3:30",
+		"playCount": 7
+	}
+}
