@@ -629,7 +629,8 @@ bot.on("message", async function (message) {
 				try{
 					// console.log(serversQueues[message.guild.name]['juke'].values())
 					var wait = {};
-					if (nextToPlay.toLowerCase() != "Kileigh's Song".toLowerCase()) {
+					if (true) {
+					// if (nextToPlay.toLowerCase() != "Kileigh's Song".toLowerCase()) {
 						try {
 							wait = await youtube.searchVideos(nextToPlay + " lyrics")
 						} catch (e) {
@@ -674,14 +675,15 @@ bot.on("message", async function (message) {
 					var name = Object.keys(vids)[0]
 					console.log(vids)
 					var stream = vids[name]['url']
-					console.log(name.toLowerCase())
-					console.log("Kileigh's Song".toLowerCase())
-					console.log(name.toLowerCase() == "Kileigh's Song".toLowerCase())
-					if (name.toLowerCase() != "Kileigh's Song".toLowerCase()) {
+					// console.log(name.toLowerCase())
+					// console.log("Kileigh's Song".toLowerCase())
+					// console.log(name.toLowerCase() == "Kileigh's Song".toLowerCase())
+					if (true) {
+					// if (name.toLowerCase() != "Kileigh's Song".toLowerCase()) {
 						stream = ytdl(vids[name]['url'], { filter: 'audioonly' })
 					}
 					const dispatcher = connection.playStream(stream || vids[name]['url'])
-					dispatcher.setVolumeLogarithmic(0.30)
+					dispatcher.setVolumeLogarithmic(0.35)
 					console.log(`Currently playing ${name}(${vids[name]['duration']}) with a link of ${vids[name]['url']}`)
 					serversQueues[message.guild.name]['curr'] = true
 					serversQueues[message.guild.name]['last'] = name
@@ -695,7 +697,8 @@ bot.on("message", async function (message) {
 						if (serversQueues[message.guild.name]['rep']) {
 							return play_video(channel, vids, sendChannel, errChannel)
 						}
-						if (name.toLowerCase() != "Kileigh's Song".toLowerCase()) {
+						if (true) {
+						// if (name.toLowerCase() != "Kileigh's Song".toLowerCase()) {
 							if (!serversQueues[message.guild.name]['repall']) {
 								sendChannel.send(`Did you like it? Here it is: ${vids[name]['url']}`).catch(()=>{message.reply("An error occurred")})
 							}
