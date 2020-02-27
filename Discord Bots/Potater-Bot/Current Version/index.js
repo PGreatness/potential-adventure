@@ -140,9 +140,8 @@ bot.on("ready", function () {
 });
 //Greet a new member of the guild and set role to lowest role (French Fries)
 bot.on("guildMemberAdd", function (member) {
-	member.guild.channels.find("name", "pg-peeps").send(member.toString() + " Welcome to the squad! I am Potater-Bot, and you can interact with me using **" + PREFIX + "**!");
-
-	member.addRole(member.guild.roles.find("name", "French Fries"));
+	member.guild.channels.filter(channel=>channel.type == 'text').first().send(member.toString() + " Welcome to the squad! I am Potater-Bot, and you can interact with me using **" + PREFIX + "**!");
+	member.addRole(member.guild.roles.sort((a,b)=>a.position - b.position || a.id - b.id).filter(role=>role.name != '@everyone').first().name);
 
 });
 
