@@ -695,8 +695,11 @@ bot.on("message", async function (message) {
 						if (serversQueues[message.guild.name]['rep']) {
 							return play_video(channel, vids, sendChannel, errChannel)
 						}
-						if (name.toLowerCase() != "Kileigh's Song".toLowerCase())
-							sendChannel.send(`Did you like it? Here it is: ${vids[name]['url']}`).catch(()=>{message.reply("An error occurred")})
+						if (name.toLowerCase() != "Kileigh's Song".toLowerCase()) {
+							if (!serversQueues[message.guild.name]['repall']) {
+								sendChannel.send(`Did you like it? Here it is: ${vids[name]['url']}`).catch(()=>{message.reply("An error occurred")})
+							}
+						}
 						console.log(serversQueues[message.guild.name]['queue'].isEmpty())
 						console.log(serversQueues[message.guild.name]['queue'])
 						if (serversQueues[message.guild.name]['queue'].isEmpty()) {
@@ -744,7 +747,8 @@ bot.on("message", async function (message) {
 										serversQueues[message.guild.name]['juke'].add(next)
 										var vi = {
 											"url" : video.url,
-											"duration" : video.length
+											"duration" : video.length,
+											"playCount" : 1
 										}
 										f[next] = vi
 										var ne = {
