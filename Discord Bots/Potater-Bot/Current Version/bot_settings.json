@@ -1,0 +1,9 @@
+{
+	"TOKEN": "YOUR_BOT_TOKEN",
+	"YT_API_KEY": "YOUR_YT_API_KEY (Is unused currently but necessary)",
+	"lastUpdate": {
+		"month": 1,
+		"day": 1,
+		"year": 2021
+	}
+}
