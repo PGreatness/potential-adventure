@@ -687,7 +687,7 @@
 	"another one bites the dust": {
 		"url": "https://www.youtube.com/watch?v=cGJ_IyFwieY",
 		"duration": "3:38",
-		"playCount": 3
+		"playCount": 4
 	},
 	"hey there Delilah": {
 		"url": "https://www.youtube.com/watch?v=hQlPzrX8u0A",
@@ -1672,7 +1672,7 @@
 	"baby justin Bieber": {
 		"url": "https://www.youtube.com/watch?v=Uim4GwSfzxY",
 		"duration": "3:35",
-		"playCount": 1
+		"playCount": 2
 	},
 	"cold water": {
 		"url": "https://www.youtube.com/watch?v=Ljc3cbWes5w",
@@ -4542,7 +4542,7 @@
 	"go kid LAROI": {
 		"url": "https://www.youtube.com/watch?v=l1c7TxbZw54",
 		"duration": "3:05",
-		"playCount": 5
+		"playCount": 6
 	},
 	"nick blixky": {
 		"url": "https://www.youtube.com/watch?v=nmtyRwq6dk0",
@@ -4967,7 +4967,7 @@
 	"play date": {
 		"url": "https://www.youtube.com/watch?v=rODr5Zfj8RA",
 		"duration": "3:00",
-		"playCount": 2
+		"playCount": 3
 	},
 	"gangdam style": {
 		"url": "https://www.youtube.com/watch?v=NeLnqJGhq_Q",
@@ -5712,6 +5712,16 @@
 	"going bad meek mill": {
 		"url": "https://www.youtube.com/watch?v=9CHnHH-kUQ8",
 		"duration": "3:01",
+		"playCount": 2
+	},
+	"telepatia": {
+		"url": "https://www.youtube.com/watch?v=Dwzk-XZxZ4k",
+		"duration": "2:41",
+		"playCount": 6
+	},
+	"kid laroi stay": {
+		"url": "https://www.youtube.com/watch?v=pd1_SxHh2vo",
+		"duration": "",
 		"playCount": 2
 	}
 }

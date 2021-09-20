@@ -383,7 +383,7 @@ bot.on("message", async function (message) {
 					uEmbed.addField(`${PREFIX}ban [MENTIONED PERSON] [REASON]`, "Ban the mentioned person from the server. They must be mentioned **and** a reason must be given.");
 					break;
 				case "play":
-					uEmbed.addField(`${PREFIX}play [TITLE]`, "Plays the audio file of the given title")
+					uEmbed.addField(`${PREFIX}play [LINK] [TITLE]`, "Plays the audio file of the given title and link. The link is only ever required once for new songs. Subsequent requests for that song can be played with just **!play [TITLE]**")
 					break;
 				case "skip":
 					uEmbed.addField(`${PREFIX}skip`, "Skips the music currently playing")
@@ -592,9 +592,11 @@ bot.on("message", async function (message) {
 		 * Command: PLAY
 		 * @param: None | String
 		 * Takes the given string and searches it on YouTube for the corresponding video.
+		 * New update: Because of the currently restrictive YouTube API, a link is required for new videos provided
+		 * prior to the name of the video in order to circumvent searching the YouTube API and using OAuth 2.0.
 		 * Play the audio file in a Voice Channel.
 		 * @error If there is an error in which the bot connects and immediately leaves, reinstall
-		 * the ytdl-core library to fix the problem
+		 * the ytdl-core library to the latest version to fix the problem
 		 */
 		case "play":
 			// console.log(serversQueues[message.guild.id]['juke'].values().length == 0)
@@ -657,12 +659,33 @@ bot.on("message", async function (message) {
 				return message.channel.send(`There is currently a music begin played. Your request is currently **number ${serversQueues[message.guild.id]['queue'].size()}** on the waiting list`).catch(() => { message.reply("An error occurred") })
 			}
 			var youtube = new YouTube(YOUTUBE_API_KEY)
+			var millisToMinutesAndSeconds = (millis) => {
+				var minutes = Math.floor(millis / 60000);
+				var seconds = ((millis % 60000) / 1000).toFixed(0);
+				return (
+					seconds == 60 ?
+					(minutes+1) + ":00" :
+					minutes + ":" + (seconds < 10 ? "0" : "") + seconds
+				);
+			}
+
+			var minutesToMillis = (time) => {
+				var min = time.split(':')[0] * 60000
+				var sec = time.split(":")[1] * 1000
+				return min + sec
+			}
 			// serversQueues[message.guild.id]['queue'].enqueue(args.slice(1).join(' '))
-			var nextToPlay = serversQueues[message.guild.id]['queue'].dequeue() || "music"
+			var tmpQueueHolder = serversQueues[message.guild.id]['queue'].dequeue()
+			var nextToPlay = tmpQueueHolder || "music"
+			var nextToPlayLink = tmpQueueHolder.split(' ')[0]
+			if (tmpQueueHolder.split(' ')[0].startsWith('http')) {
+				nextToPlay = tmpQueueHolder.split(' ').slice(1).join(' ')
+			}
 			var file = require(`./Requests/${message.guild.id}/Jukebox.json`)
 			var videos = {}
 			console.log('hereas')
 			console.log(nextToPlay)
+			console.log(nextToPlayLink)
 			var closest = serversQueues[message.guild.id]['juke'].get(nextToPlay)
 			console.log('juke: ' + serversQueues[message.guild.id]['juke'].get(nextToPlay))
 			// console.log(serversQueues[message.guild.id]['juke'].values())
@@ -677,14 +700,21 @@ bot.on("message", async function (message) {
 					}
 				}
 			} else {
+				if (!args.slice(1)[0].startsWith("http")) {
+					return message.channel.send("Sorry! Because of YouTube's recent changes, I can't search for videos :( Please use the format **!play [LINK] [NAME]** so I can remember what to play!").catch(()=>{message.reply("An error occurred")})
+				}
+				if (!args.slice(2).join(' ')) {
+					return message.channel.send("Name for song not given, stopping jukebox :(").catch(()=> {message.reply("An error occurred")})
+				}
 				try {
 					// console.log(serversQueues[message.guild.id]['juke'].values())
 					var wait = {};
 					try {
-						wait = await youtube.searchVideos(nextToPlay + " lyrics")
+						wait = await youtube.searchVideos("classical" + " lyrics")
 					} catch (e) {
-						console.log("error happened!")
-						break;
+						console.log("Youtube still won't let me search!\n" + e)
+						wait.url = nextToPlayLink
+						wait.length = ""
 					}
 					videos = {
 						[nextToPlay]: {
@@ -732,6 +762,7 @@ bot.on("message", async function (message) {
 					dispatcher.on('end', () => {
 						dispatcher.removeAllListeners()
 						fw[name]['playCount'] += 1
+						if (minutesToMillis(fw[name]['duration']) < dispatcher.totalStreamTime) fw[name]['duration'] = millisToMinutesAndSeconds(dispatcher.totalStreamTime)
 						fs.writeFile(`./Requests/${message.guild.id}/Jukebox.json`, JSON.stringify(fw, null, '\t'), () => console.log('edited playCount'))
 						console.log(`Song done! Played for ${dispatcher.totalStreamTime}ms`)
 						console.log("Got here too!")
@@ -775,7 +806,24 @@ bot.on("message", async function (message) {
 								play_video(channel, next_video, sendChannel, errChannel)
 							} else {
 								try {
-									youtube.searchVideos(next + " lyrics").then((video) => {
+									if (!args.slice(1)[0].startsWith("http")) {
+										return message.channel.send("Sorry! Because of YouTube's recent changes, I can't search for videos :( Please use the format **!play [LINK] [NAME]** so I can remember what to play!").catch(()=>{message.reply("An error occurred")})
+									}
+									if (!args.slice(2).join(' ')) {
+										return message.channel.send("Name for song not given, stopping jukebox :(").catch(()=> {message.reply("An error occurred")})
+									}
+									var ne = {
+										[next]: {
+											"url": args.slice(1)[0],
+											"duration": "",
+											"playCount": 1
+										}
+									}
+									fs.writeFileSync(`./Requests/${message.guild.id}/Jukebox.json`, JSON.stringify(file, null, '\t'))
+									console.log(`2. This is the video: ${Object.keys(ne)[0]}(${ne[next]['duration']}), ${ne[next]['url']}`)
+									// dispatcher.end()
+									play_video(channel, ne, sendChannel, errChannel)
+									/* youtube.searchVideos(next + " lyrics").then((video) => {
 										next_video = video
 										serversQueues[message.guild.id]['juke'].add(next)
 										var vi = {
@@ -795,7 +843,7 @@ bot.on("message", async function (message) {
 										console.log(`2. This is the video: ${Object.keys(ne)[0]}(${ne[next]['duration']}), ${ne[next]['url']}`)
 										// dispatcher.end()
 										play_video(channel, ne, sendChannel, errChannel)
-									}).catch(err => { console.log("error: " + err) })
+									}).catch(err => { console.log("error: " + err) }) */
 								} catch (e) {
 									console.log(e)
 									return errChannel.send("Oh no! I can't search for new songs right now :(").catch(() => { message.reply("An error occurred") })
