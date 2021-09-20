@@ -91,3 +91,15 @@ node_modules
 bot-settings.json
 
 ########################
+
+# Chat Logs #
+
+Chat\ Logs/
+
+########################
+
+# Temporary MP4 files #
+
+*.mp4
+
+########################
