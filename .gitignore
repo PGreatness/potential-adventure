@@ -88,6 +88,6 @@ node_modules
 
 # Bot files #
 
-**/Potater-Bot/**/bot-settings.json
+bot-settings.json
 
 ########################
