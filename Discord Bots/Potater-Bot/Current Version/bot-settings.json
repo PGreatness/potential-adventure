@@ -1,4 +1,9 @@
 {
-    "TOKEN":"BOT_TOKEN",
-    "YT_API_KEY": "API_KEY"
+	"TOKEN": "NDEyODAzODc5MzE1NDM5NjMx.XRjr4g.HNPuQC80I1Bo_f6VcYX7Lh4WXIM",
+	"YT_API_KEY": "AIzaSyDk7iEY08wi_NKiTvNlPoPlmelvdORnQTU",
+	"lastUpdate": {
+		"month": 8,
+		"day": 20,
+		"year": 2021
+	}
 }
