@@ -2,6 +2,7 @@
 	"ignore": [
 		"user-settings.json",
 		"bot-settings.json",
+		"bot_settings.json",
 		"./Chat Logs/",
 		"./Playlists",
 		"./Requests",
@@ -9,6 +10,8 @@
 		"./User Settings/",
 		"./User Settings/",
 		"./User Settings/",
+		"./User Settings/",
+		"./Temporary Files/",
 		"./User Settings/"
 	]
 }

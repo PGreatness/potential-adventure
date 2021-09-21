@@ -7,6 +7,14 @@ class Queue {
         this.items.push(elem)
     }
 
+    enqueueFront(elem) {
+        var tmp = [elem]
+        for (let i = 0; i < this.items.length; i++) {
+            tmp[i + 1] = this.items[i]
+        }
+        this.items = tmp
+    }
+
     dequeue() {
         if (this.isEmpty()) {
             return null
@@ -23,6 +31,10 @@ class Queue {
 
     isEmpty() {
         return this.items.length == 0
+    }
+
+    hasNext() {
+        return this.items[0] != null
     }
 
     print() {
