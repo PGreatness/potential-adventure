@@ -656,7 +656,7 @@ bot.on("message", async function (message) {
 				serversQueues[message.guild.id]['queue'].enqueue(args.slice(1).join(' '))
 			}
 			if (serversQueues[message.guild.id]['curr']) {
-				return message.channel.send(`There is currently a music begin played. Your request is currently **number ${serversQueues[message.guild.id]['queue'].size()}** on the waiting list`).catch(() => { message.reply("An error occurred") })
+				return message.channel.send(`There is currently a music being played. Your request is currently **number ${serversQueues[message.guild.id]['queue'].size()}** on the waiting list`).catch(() => { message.reply("An error occurred") })
 			}
 			var youtube = new YouTube(YOUTUBE_API_KEY)
 			var millisToMinutesAndSeconds = (millis) => {
