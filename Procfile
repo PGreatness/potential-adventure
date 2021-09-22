@@ -1,1 +1,1 @@
-worker: nodemon Discord\ Bots/Potater-Bot/Current\ Version/index.js
+worker: node Discord\ Bots/Potater-Bot/Current\ Version/index.js
